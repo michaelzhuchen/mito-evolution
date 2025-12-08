@@ -1,0 +1,3 @@
+[FAMILIES]
+- family_1
+gene_tree = POSTERIORTREESDIR/MSAFILE_pruned.ufboot.rooted
