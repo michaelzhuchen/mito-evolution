@@ -23,6 +23,6 @@ for OGID in `grep -P -w "$SGE_TASK_ID$" $SH_TASKARRAY_FILE | cut -f 1`; do \
 	then
 		conda activate clipkit_2.3.0
 		clipkit -q -m gappy "${MSAFILE}" -o $TRIMOUTFILE
-		python protein_phylogeny/0_alignment/remove_gap_only_seqs.py $TRIMOUTFILE
+		python utils/remove_gap_only_seqs.py $TRIMOUTFILE
 	fi
 done;

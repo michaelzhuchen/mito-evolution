@@ -16,7 +16,7 @@ origin_table$OG_id <- gsub(".faa_clipkit.gappy.msa", "", origin_table$OG_id, fix
 prok_origin_OG_ids <- origin_table$OG_id[origin_table$origin_domain == "Prokaryote"]
 
 # Read in OGs
-ogs_long <- read.table(file.path(zenodo_directory, "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
+ogs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
 colnames(ogs_long) <- c("accession", "Orthogroup", "taxid", "BOOL_PRIMARY_OG")
 ogs_long_primary <- ogs_long %>% filter(BOOL_PRIMARY_OG)
 
@@ -56,6 +56,8 @@ deeploc_results_ogs <- merge(deeploc_results, ogs_long, by.x=c("Protein_ID", "ta
 deeploc_results_exclude <- deeploc_results_ogs %>% filter(Mitochondrion >= deeploc_mito_threshold) %>% group_by(Orthogroup) %>% filter(length(unique(taxid)) < n_mito_species_threshold)
 deeploc_results_exclude_OG_ids <- unique(deeploc_results_exclude$Orthogroup)
 deeploc_results_exclude_OG_ids <- deeploc_results_exclude_OG_ids[!deeploc_results_exclude_OG_ids %in% gold_gene_accession_OG_id_df$OG_id]
+## Write out OGs that have few species with predicted mito proteins
+# write.table(deeploc_results_exclude_OG_ids, here('data/reconstruction', 'deeploc_results_exclude_lt5mitospp_OG_ids.txt'), sep="\t", row.names = FALSE, col.names=FALSE, quote=FALSE)
 
 tax_levels_df <- data.frame(label = tree$node.label)
 tree_labels <- c(tree$tip.label, tree$node.label)
@@ -63,7 +65,7 @@ tax_levels_df$node_index <- match(tax_levels_df$label, tree_labels)
 
 ## Read in Eukaryota parent PhROGs
 n_minimum_species_leca <- 4
-parent_progs_long_raw <- read.table(file.path(zenodo_directory, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
+parent_progs_long_raw <- read.table(here("data/phylogenetically_resolved_orthogroups", "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(parent_progs_long_raw) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
 parent_progs_long <- parent_progs_long_raw %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
 parent_progs_long_primary <- parent_progs_long_raw %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(BOOL_primary_OG) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
@@ -73,21 +75,25 @@ parent_progs_long_primary_mito <- parent_progs_long_primary %>% group_by(PROG_id
 # Filter out DeepLocMC predictions below a minimum number of species with predicted mito protein
 parent_progs_long_primary_mito <- parent_progs_long_primary_mito %>% filter(!OG_id %in% deeploc_results_exclude_OG_ids)
 parent_mito_PhROG_ids <- unique(parent_progs_long_primary_mito$PROG_id)
+## Write out parent mito PhROG ids
+# write.table(parent_mito_PhROG_ids, here("data/reconstruction", "parent_mito_PhROG_ids_corespecies_deeplocmc.min5spp_Eukaryota.parent.2supergroups.min4spp.filter.txt"), row.names = FALSE, col.names = FALSE, quote = FALSE)
+
 # Get Eukaryota_parent
 parent_progs_long_primary_mito_eukaryota <- parent_progs_long_primary_mito %>% filter(label == "Node34_Eukaryota")
 parent_progs_long_primary_mito_eukaryota <- parent_progs_long_primary_mito_eukaryota %>% group_by(PROG_id) %>% filter(length(unique(taxid)) >= n_minimum_species_leca)
 eukaryota_parent_mito_PhROG_ids <- unique(parent_progs_long_primary_mito_eukaryota$PROG_id)
 parent_progs_long_eukaryota <- parent_progs_long %>% filter(label == "Node34_Eukaryota")
+
 # Filter for prok origin for HGT detection
 parent_progs_long_prokorigin <- parent_progs_long %>% filter(OG_id %in% prok_origin_OG_ids)
 
-# Get PhROGs at each taxonomic level, traversing from root to leaves
+## Get PhROGs at each taxonomic level, traversing from root to leaves
 progs_long_agg <- c()
 for (i in 1:nrow(tax_levels_df)) {
   tax_levels_df_curr <- tax_levels_df[i,]
   print(tax_levels_df_curr$label)
   
-  progs_long <- read.table(file.path(zenodo_directory, "PhROGs_long", paste0("PhROGs_at_", tax_levels_df_curr$label, "_long.tsv")), sep="\t", header=TRUE)
+  progs_long <- read.table(file.path("data/phylogenetically_resolved_orthogroups", "PhROGs_long", paste0("PhROGs_at_", tax_levels_df_curr$label, "_long.tsv")), sep="\t", header=TRUE)
   colnames(progs_long) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
   
   progs_long <- progs_long %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id))
@@ -121,7 +127,6 @@ for (i in 1:nrow(tax_levels_df)) {
     missing_index <- which(is.na(progs_long$mito_localization_prob_parsimony))
     missing_child_OG_protein_ids <- paste0(progs_long$OG_id[missing_index], "_", progs_long$protein_id[missing_index])
     progs_long$mito_localization_prob_parsimony[missing_index] <- parent_progs_long$mito_localization_prob_parsimony[match(missing_child_OG_protein_ids, parent_OG_protein_ids)]
-    
   }
   
   progs_long_agg <- rbind(progs_long_agg, progs_long)

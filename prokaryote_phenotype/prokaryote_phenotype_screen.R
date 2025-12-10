@@ -5,10 +5,10 @@ library(tidyverse)
 library(here)
 
 ### Get prokaryote species phenotypes
-uniprot_proteomes_all_tax <- read.table(here("data/taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_all_tax <- read.delim(here("data/taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), header=TRUE)
 
 # read in GOLD species phenotypes
-GOLD_phenotypes <- read.csv("~/Dropbox (MIT)/Mootha_lab/reference/GOLD/goldData_Organism.csv", header=TRUE)
+GOLD_phenotypes <- read.csv(here("data/prokaryote_phenotype", "goldData_Organism.csv"), header=TRUE)
 GOLD_phenotypes_selected <- GOLD_phenotypes[which(GOLD_phenotypes$ORGANISM.NCBI.TAX.ID %in% uniprot_proteomes_all_tax$TaxId),]
 GOLD_phenotypes_selected_nodups <- GOLD_phenotypes_selected[!duplicated(GOLD_phenotypes_selected$ORGANISM.NCBI.TAX.ID),]
 uniprot_proteomes_all_tax_GOLD <- merge(uniprot_proteomes_all_tax, GOLD_phenotypes_selected_nodups, by.x="TaxId", by.y="ORGANISM.NCBI.TAX.ID", all.x=TRUE, all.y=FALSE)
@@ -57,7 +57,8 @@ uniprot_proteomes_all_tax_GOLD_bacdive$oxygen_combined_annot[which(uniprot_prote
 
 
 ### Read in orthogroup data
-ogs_long <- read.table(here("data/orthogroups", "refined_OGs_euk673spp_long.txt"), sep="\t", header=TRUE)
+ogs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
+colnames(ogs_long) <- c("accession", "Orthogroup", "taxid", "BOOL_PRIMARY_OG")
 
 origin_table <- read.table(here("data/protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t")
 colnames(origin_table) <- c("OG_id", "n_euk_species_largest_euk_clade", "n_prok_species_largest_prok_clade", "LCA_node", "LCA_node_euks", "origin_domain", "dropped_tips")
@@ -92,7 +93,6 @@ LECA_OG_ids <- unique(gsub("_.*", "", leca_PhROG_OG_ids))
 leca_mito_PhROG_ids <- read.table(here("data/reconstruction", 'leca_mito_PhROG_ids_corespecies_deeplocmc.min5spp_Eukaryota.parent.2supergroups.min4spp.filter.txt'))$V1
 LECA_mito_OG_ids <- unique(gsub("_.*", "", leca_mito_PhROG_ids))
 ogs_long_prok_summary_phenotypes <- ogs_long_prok_summary_phenotypes %>% mutate(in_LECA = Orthogroup %in% LECA_OG_ids, in_LECA_mito = Orthogroup %in% LECA_mito_OG_ids)
-# Select LECA +/- mito
 ogs_long_prok_summary_phenotypes <- ogs_long_prok_summary_phenotypes %>% filter(in_LECA_mito)
 
 # Compute log odds
@@ -104,5 +104,6 @@ ogs_long_prok_summary_phenotypes <- ogs_long_prok_summary_phenotypes[order(ogs_l
 
 ogs_long_prok_summary_phenotypes$Rank <- 1:nrow(ogs_long_prok_summary_phenotypes)
 
-
+## Write out
+# write.table(ogs_long_prok_summary_phenotypes, 'anaerobic_prokaryote_enrichment_screen_LECA_mito_OGs_bacdive.GOLD.tsv', sep="\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
