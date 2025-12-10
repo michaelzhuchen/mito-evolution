@@ -1,0 +1,20 @@
+1) Download DeepLoc2.0 from https://github.com/teevee112/DeepLoc-2.0.
+	Extract DeepLoc.tar.gz archive with tar -xvf to deeploc2_package/.
+	cd deeploc2_package
+	Use python v3.9.15 to create a virtual environment .venv within deeploc2_package/: python -m venv .venv
+	Activate virtual environment: source .venv/bin/activate
+	Install numpy v1.26.4 in virtual environment: python -m pip install numpy==1.26.4
+	Install sentencepiece v0.2.0 in virtual environment: python -m pip install sentencepiece==0.2.0
+
+2) Replace the default DeepLoc2.0 model weights with the retrained model weights:
+	Replace the existing model weights in deeploc2_package/DeepLoc2/models/models_prott5 with the retrained model weights from DeepLoc-2.0/models/models_prott5*.
+
+3) Compile DeepLoc2.0 using the updated model weights:
+	cd deeploc2_package
+	source .venv/bin/activate
+	python -m pip install .
+
+3) Make predictions using the retrained DeepLoc2.0 model:
+	cd deeploc2_package
+	source .venv/bin/activate
+	deeploc2 -f $FASTA_FILE -o $OUTPUT_DIRECTORY -m Accurate

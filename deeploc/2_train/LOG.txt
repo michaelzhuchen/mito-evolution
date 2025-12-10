@@ -1,0 +1,31 @@
+Install DeepLoc2.0 from https://github.com/teevee112/DeepLoc-2.0 with 'conda env create -f environment.yml'
+
+
+Before training DeepLoc2.0 on new dataset:
+	Add files:
+		Replace DeepLoc-2.0/src/model.py with model.py from this directory.
+		Replace DeepLoc-2.0/src/metrics.py with metrics.py from this directory.
+		Replace DeepLoc-2.0/src/data.py with data.py from this directory.
+	Modify files:
+		src/constants.py: point to new training dataset
+		data_files/embed_configs/swissprot_t5.yaml: point to new training dataset
+		src/model.py: update pos_weights_bce (label weights) in focal_loss() based on the frequency of each label in the training dataset
+
+
+To train DeepLoc2.0:
+conda activate deeploc20
+python train_sl.py --model Accurate
+python train_ss.py --model Accurate
+
+After training, the trained model weights are available in DeepLoc-2.0/models
+
+Changelog:
+	Modifications to allow handling of missing/nan labels in training data:
+		Modified src/model.py: mask nan values in focal_loss()
+		Modified src/metrics.py: mask nan values in get_best_threshold_mcc() and calculate_sl_metrics_fold(). 
+	Modifications to improve efficiency:
+		Modified src/data.py: In get_train_val_dataloaders() for train_dataloader and val_dataloader, set torch.utils.data.DataLoader(num_workers=4, pin_memory=True)
+
+
+
+
