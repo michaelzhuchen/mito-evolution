@@ -5,9 +5,16 @@ library(castor)
 library(ggplot2)
 library(here)
 
+### Select dataset
+dataset_name <- "species_tree_1"
+suffix <- "species_tree_1"
+species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree"))
+homology_power_agg <- read.table(here("data/abSENSE_HMM", "absense_results.tsv"), sep="\t", header=TRUE)
+homology_power_per_species <- read.table(here("data/abSENSE_HMM", "absense_results_per_species.tsv"), sep="\t", header=FALSE)
+
 ### Read in datasets
 # Read in experimental and mtDNA mito proteins
-gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_2025.09.30.tsv"), sep="\t", header=TRUE)
+gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_subsampled.OGs_2026.04.20.tsv"), sep="\t", header=TRUE)
 
 # Read in OG domain origins
 origin_table <- read.table(here("data/protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t")
@@ -18,57 +25,78 @@ prok_origin_OG_ids <- origin_table$OG_id[origin_table$origin_domain == "Prokaryo
 # Read in OGs
 ogs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
 colnames(ogs_long) <- c("accession", "Orthogroup", "taxid", "BOOL_PRIMARY_OG")
+
+# Update with split orthogroups
+split_OGs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_subsampled_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
+ogs_long <- ogs_long %>% filter(!Orthogroup %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
+ogs_long <- rbind(ogs_long, split_OGs_long)
+
+# Get primary OG
 ogs_long_primary <- ogs_long %>% filter(BOOL_PRIMARY_OG)
 
 ## Load and process DeepLoc results
 # Read in DeepLoc results
-deeploc_results <- read.table(file.path(supplemental_data_directory, "TableS7_retrained_DeepLoc_predictions.tsv"), header=TRUE)
+deeploc_results <- read.table(file.path(supplemental_data_directory, "TableS5_DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
 colnames(deeploc_results) <- c("Protein_ID", "Mitochondrion")
 deeploc_results$taxid <- gsub("_.*", "", deeploc_results$Protein_ID)
+
+# Assign OGs
+ogs_long_reduce <- ogs_long[,c("accession", "Orthogroup")]
+deeploc_results <- merge(deeploc_results, ogs_long_reduce, by.x="Protein_ID", by.y="accession") # Allow non-primary OGs (many-to-many)
+
 # Fix organelle-encoded proteins
 all_nonmito_accessions <- read.table(here("data/deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
 all_mito_accessions <- read.table(here("data/deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
 deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% all_nonmito_accessions] <- 0
 deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% all_mito_accessions] <- 1
-# Mark experimentally-defined proteomes
+
+# Mark experimentally-defined and mtDNA proteins
 completed_mitoproteomes_species_list <- c("9606", "559292", "3702", "1257118", "5689", "185431", "5741", "32595")
 deeploc_results$Mitochondrion[deeploc_results$taxid %in% completed_mitoproteomes_species_list & !deeploc_results$Protein_ID %in% gold_gene_accession_OG_id_df$gene_accession] <- 0
 deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% gold_gene_accession_OG_id_df$gene_accession] <- 1
 
-# Read in taxonomic data
-uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+# Ignore species missing organelle genomes in OGs that have organelle encoded proteins
+missing_nonmito_organelle_taxids <- read.table(here("data/deeploc", "missing_nonmito_organelle_taxids.txt"))$V1
+missing_mtdna_taxids <- read.table(here("data/deeploc", "missing_mtdna_taxids.txt"))$V1
+nonmito_organelle_OG_ids <- unique(deeploc_results$Orthogroup[deeploc_results$Protein_ID %in% all_nonmito_accessions])
+deeploc_results <- deeploc_results %>% filter(!(Orthogroup %in% nonmito_organelle_OG_ids & taxid %in% missing_nonmito_organelle_taxids))
+mito_organelle_OG_ids <- unique(deeploc_results$Orthogroup[deeploc_results$Protein_ID %in% all_mtdna_accessions])
+deeploc_results <- deeploc_results %>% filter(!(Orthogroup %in% mito_organelle_OG_ids & taxid %in% missing_mtdna_taxids))
 
-eukaryote_reference_species_list <- completed_mitoproteomes_species_list
-
-# Read in species tree and select key ancestral nodes connecting focal species
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree"))
-tree <- keep.tip(species_tree, eukaryote_reference_species_list)
-
-## Set mito localization thresholds for Mk model and parsimony model
+# Probability that an individual protein is mito
 deeploc_thresholds <- read.csv(here("data/deeploc", "deeploc_thresholds.csv"))
 deeploc_mito_threshold <- deeploc_thresholds$threshold[deeploc_thresholds$label == "Mitochondrion"]
-mito_localization_prob_mk_threshold <- deeploc_mito_threshold
+mito_localization_prob_mk_threshold <- 0.5
 mito_localization_prob_parsimony_threshold <- 0.5
 
 # Filter DeepLocMC predictions by minimum number of species with predicted mito protein
 n_mito_species_threshold <- 5
-deeploc_results_ogs <- merge(deeploc_results, ogs_long, by.x=c("Protein_ID", "taxid"), by.y=c("accession", "taxid"))
-deeploc_results_exclude <- deeploc_results_ogs %>% filter(Mitochondrion >= deeploc_mito_threshold) %>% group_by(Orthogroup) %>% filter(length(unique(taxid)) < n_mito_species_threshold)
+deeploc_results_exclude <- deeploc_results %>% filter(Mitochondrion >= deeploc_mito_threshold) %>% group_by(Orthogroup) %>% filter(length(unique(taxid)) < n_mito_species_threshold)
 deeploc_results_exclude_OG_ids <- unique(deeploc_results_exclude$Orthogroup)
 deeploc_results_exclude_OG_ids <- deeploc_results_exclude_OG_ids[!deeploc_results_exclude_OG_ids %in% gold_gene_accession_OG_id_df$OG_id]
 ## Write out OGs that have few species with predicted mito proteins
 # write.table(deeploc_results_exclude_OG_ids, here('data/reconstruction', 'deeploc_results_exclude_lt5mitospp_OG_ids.txt'), sep="\t", row.names = FALSE, col.names=FALSE, quote=FALSE)
 
+
+## Read in taxonomic data
+uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+
+# Select focal species
+eukaryote_reference_species_list <- completed_mitoproteomes_species_list
+
+# Select key ancestral nodes connecting focal species
+tree <- keep.tip(species_tree, eukaryote_reference_species_list)
 tax_levels_df <- data.frame(label = tree$node.label)
 tree_labels <- c(tree$tip.label, tree$node.label)
 tax_levels_df$node_index <- match(tax_levels_df$label, tree_labels)
 
+
 ## Read in Eukaryota parent PhROGs
 n_minimum_species_leca <- 4
-parent_progs_long_raw <- read.table(here("data/phylogenetically_resolved_orthogroups", "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
+parent_progs_long_raw <- read.table(here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(parent_progs_long_raw) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
-parent_progs_long <- parent_progs_long_raw %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
-parent_progs_long_primary <- parent_progs_long_raw %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(BOOL_primary_OG) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
+parent_progs_long <- parent_progs_long_raw %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
+parent_progs_long_primary <- parent_progs_long_raw %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(BOOL_primary_OG) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
 
 # Filter by mito localization prob by Mk or parsimony
 parent_progs_long_primary_mito <- parent_progs_long_primary %>% group_by(PROG_id) %>% filter(mito_localization_prob_mk >= mito_localization_prob_mk_threshold | mito_localization_prob_parsimony >= mito_localization_prob_parsimony_threshold)
@@ -76,13 +104,13 @@ parent_progs_long_primary_mito <- parent_progs_long_primary %>% group_by(PROG_id
 parent_progs_long_primary_mito <- parent_progs_long_primary_mito %>% filter(!OG_id %in% deeploc_results_exclude_OG_ids)
 parent_mito_PhROG_ids <- unique(parent_progs_long_primary_mito$PROG_id)
 ## Write out parent mito PhROG ids
-# write.table(parent_mito_PhROG_ids, here("data/reconstruction", "parent_mito_PhROG_ids_corespecies_deeplocmc.min5spp_Eukaryota.parent.2supergroups.min4spp.filter.txt"), row.names = FALSE, col.names = FALSE, quote = FALSE)
+# write.table(parent_mito_PhROG_ids, here("data/reconstruction", paste0("parent_mito_PhROG_ids_", suffix, ".txt")), row.names = FALSE, col.names = FALSE, quote = FALSE)
 
 # Get Eukaryota_parent
 parent_progs_long_primary_mito_eukaryota <- parent_progs_long_primary_mito %>% filter(label == "Node34_Eukaryota")
 parent_progs_long_primary_mito_eukaryota <- parent_progs_long_primary_mito_eukaryota %>% group_by(PROG_id) %>% filter(length(unique(taxid)) >= n_minimum_species_leca)
-eukaryota_parent_mito_PhROG_ids <- unique(parent_progs_long_primary_mito_eukaryota$PROG_id)
 parent_progs_long_eukaryota <- parent_progs_long %>% filter(label == "Node34_Eukaryota")
+parent_progs_long_primary_eukaryota <- parent_progs_long_primary %>% filter(label == "Node34_Eukaryota")
 
 # Filter for prok origin for HGT detection
 parent_progs_long_prokorigin <- parent_progs_long %>% filter(OG_id %in% prok_origin_OG_ids)
@@ -93,10 +121,9 @@ for (i in 1:nrow(tax_levels_df)) {
   tax_levels_df_curr <- tax_levels_df[i,]
   print(tax_levels_df_curr$label)
   
-  progs_long <- read.table(file.path("data/phylogenetically_resolved_orthogroups", "PhROGs_long", paste0("PhROGs_at_", tax_levels_df_curr$label, "_long.tsv")), sep="\t", header=TRUE)
+  progs_long <- read.table(file.path("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", paste0("PhROGs_at_", tax_levels_df_curr$label, "_long.tsv")), sep="\t", header=TRUE)
   colnames(progs_long) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
-  
-  progs_long <- progs_long %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id))
+  progs_long <- progs_long %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
   
   # For NA mito localization probs, retrieve the mito localization prob from the most recent parent
   if (tax_levels_df_curr$label != tree$node.label[1]) {
@@ -127,6 +154,7 @@ for (i in 1:nrow(tax_levels_df)) {
     missing_index <- which(is.na(progs_long$mito_localization_prob_parsimony))
     missing_child_OG_protein_ids <- paste0(progs_long$OG_id[missing_index], "_", progs_long$protein_id[missing_index])
     progs_long$mito_localization_prob_parsimony[missing_index] <- parent_progs_long$mito_localization_prob_parsimony[match(missing_child_OG_protein_ids, parent_OG_protein_ids)]
+    
   }
   
   progs_long_agg <- rbind(progs_long_agg, progs_long)
@@ -167,7 +195,7 @@ for (i in 1:nrow(tax_levels_df)) {
     progs_long_filter <- progs_long_filter %>% filter(PROG_id %in% present_PhROG_ids)
     
     # Require that it be present in a euk supergroup indicating breadth of coverage
-    permitted_leca_duplication_LCA_nodelabels <- c("Eukaryota", "Opimoda", "Amorphea_CRuMs", "Amorphea", "Obazoa", "Diphoda", "Diaphorectickes", "CAM_Haptista", "CAM")
+    permitted_leca_duplication_LCA_nodelabels <- unique(c("Eukaryota", "Opimoda", "Amorphea_CRuMs", "Amorphea", "Obazoa", "Diphoda", "Diaphorectickes", "CAM_Haptista", "CAM", "Archaeplastida", uniprot_proteomes_tax$superfamily[uniprot_proteomes_tax$domain == "Eukaryota"])) # same nodelabels used for HGT detection
     progs_long_filter <- progs_long_filter %>% group_by(PROG_id) %>% filter(gsub("Node[0-9]+_", "", label) %in% permitted_leca_duplication_LCA_nodelabels)
     
     # Minimum species filter
@@ -199,6 +227,9 @@ for (curr_taxid in eukaryote_reference_species_list) {
 rownames(gene_table) <- 1:nrow(gene_table)
 
 ### Add mtDNA proteins from mtDNA-rich eukaryotes as gold mito proteins
+reclinomonas_taxid <- "48483"
+andalucia_taxid <- "505711"
+mantamonas_taxid <- "2983909"
 # Read in hmmsearch results from refined OGs to mtDNA proteins in mtDNA-rich eukaryotes
 mtdna_rich_euks_hmmsearch_tophit <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA_rich_euks_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"), header=FALSE)
 colnames(mtdna_rich_euks_hmmsearch_tophit) <- c("gene_accession", "OG_id")
@@ -215,14 +246,17 @@ mtdna_rich_euks_proteins_df <- mtdna_rich_euks_proteins_df %>% filter(!OG_id %in
 gene_table_add_mtdna_rich_euks_agg <- c()
 for (curr_OG_id in unique(mtdna_rich_euks_proteins_df$OG_id)) {
   mtdna_rich_euks_proteins_df_curr <- mtdna_rich_euks_proteins_df %>% filter(OG_id == curr_OG_id)
-  BOOL_present_jakobid <- any(mtdna_rich_euks_proteins_df_curr$taxid %in% c("48483", "505711"))
-  BOOL_present_crums <- any(mtdna_rich_euks_proteins_df_curr$taxid %in% c("2983909"))
+  BOOL_present_jakobid <- any(mtdna_rich_euks_proteins_df_curr$taxid %in% c(reclinomonas_taxid, andalucia_taxid))
+  BOOL_present_crums <- any(mtdna_rich_euks_proteins_df_curr$taxid %in% c(mantamonas_taxid))
   eukaryota_node <- which(tree_labels == "Node34_Eukaryota")
-  diphoda_node <- which(tree_labels == "Node35_Diphoda")
-  opimoda_node <- which(tree_labels == "Node139_Opimoda")
+  diphoda_node <- get_ancestral_nodes(tree, grep("Trypanosomatidae", tree_labels), Nsplits=1) + Ntip(tree)
+  opimoda_node <- get_ancestral_nodes(tree, grep("Amorphea", tree_labels), Nsplits=1) + Ntip(tree)
+  diphoda_node_label <- tree_labels[diphoda_node]
+  opimoda_node_label <- tree_labels[opimoda_node]
+  
   gene_accession_curr <- mtdna_rich_euks_proteins_df_curr$gene_accession
-  gene_accession_curr_jakobid <- mtdna_rich_euks_proteins_df_curr$gene_accession[mtdna_rich_euks_proteins_df_curr$taxid %in% c("48483", "505711")]
-  gene_accession_curr_crums <- mtdna_rich_euks_proteins_df_curr$gene_accession[mtdna_rich_euks_proteins_df_curr$taxid %in% c("2983909")]
+  gene_accession_curr_jakobid <- mtdna_rich_euks_proteins_df_curr$gene_accession[mtdna_rich_euks_proteins_df_curr$taxid %in% c(reclinomonas_taxid, andalucia_taxid)]
+  gene_accession_curr_crums <- mtdna_rich_euks_proteins_df_curr$gene_accession[mtdna_rich_euks_proteins_df_curr$taxid %in% c(mantamonas_taxid)]
   
   nodes_to_add <- c(eukaryota_node)
   if (BOOL_present_jakobid) {
@@ -280,10 +314,12 @@ for (curr_OG_id in unique(mtdna_rich_euks_proteins_df$OG_id)) {
       full_tree_node <- which(species_tree$node.label == tree_labels[curr_node])
       subtree <- get_subtree_at_node(species_tree, full_tree_node)$subtree
       gene_accession_curr_node <- gene_accession_curr[which(gsub("_.*", "", gene_accession_curr) %in% subtree$tip.label)]
-      if ("Node35_Diphoda" %in% subtree$node.label) {
+      
+      # Also add jakobid and CRuMs protein IDs if they are contained in the current subtree
+      if (diphoda_node_label %in% subtree$node.label) {
         gene_accession_curr_node <- c(gene_accession_curr_node, gene_accession_curr_jakobid)
       }
-      if ("Node139_Opimoda" %in% subtree$node.label) {
+      if (opimoda_node_label %in% subtree$node.label) {
         gene_accession_curr_node <- c(gene_accession_curr_node, gene_accession_curr_crums)
       }
       
@@ -451,11 +487,9 @@ if (nrow(multiple_mappings) > 0) {
 
 ### Preprocess whole proteome data for gains and losses analysis
 # Get absense data
-homology_power_agg <- read.table(here("data/abSENSE_HMM", "absense_results.tsv"), sep="\t", header=TRUE)
 colnames(homology_power_agg) <- c("PhROG_id", "human_accessions", "L", "R", "OG_mrca_label", "OG_outgroup_mrca_label", "outgroup_kingdom_species", "fraction_of_detectable_outgroup_kingdoms", "probability_of_detection_in_any_outgroup_species", "hmm_length", "r_squared", "comments")
-homology_power_per_species <- read.table(here("data/abSENSE_HMM", "absense_results_per_species.tsv"), sep="\t", header=FALSE)
 colnames(homology_power_per_species) <- c("PhROG_id", "taxid", "probability_of_detection")
-homology_power_agg <- homology_power_agg %>% rowwise() %>% mutate(OG_id = gsub("_.*", "", PhROG_id))
+homology_power_agg <- homology_power_agg %>% rowwise() %>% mutate(OG_id = gsub("_Node.*", "", PhROG_id))
 # Mark OGs with Eukaryota as MRCA as 1
 homology_power_agg$fraction_of_detectable_outgroup_kingdoms[homology_power_agg$OG_mrca_label == "Node34_Eukaryota"] <- 1
 homology_power_agg$absense_label <- "Undetectable"
@@ -489,8 +523,8 @@ for (i in 1:nrow(tax_levels_df)) {
     present_PhROG_ids <- unique(progs_long_filter$PROG_id[which(progs_long_filter$label == tax_levels_df_curr$label | OG_protein_ids %in% parent_OG_protein_ids)])
     progs_long_filter <- progs_long_filter %>% filter(PROG_id %in% present_PhROG_ids)
     
-    # Require that it be present in a euk supergroup.
-    permitted_leca_duplication_LCA_nodelabels <- unique(c("Eukaryota", "Opimoda", "Amorphea_CRuMs", "Amorphea", "Obazoa", "Diphoda", "Diaphorectickes", "CAM_Haptista", "CAM"))
+    # Require that it be present in a euk supergroup indicating breadth of coverage
+    permitted_leca_duplication_LCA_nodelabels <- unique(c("Eukaryota", "Opimoda", "Amorphea_CRuMs", "Amorphea", "Obazoa", "Diphoda", "Diaphorectickes", "CAM_Haptista", "CAM", "Archaeplastida", uniprot_proteomes_tax$superfamily[uniprot_proteomes_tax$domain == "Eukaryota"])) # same nodelabels used for HGT detection
     progs_long_filter <- progs_long_filter %>% group_by(PROG_id) %>% filter(gsub("Node[0-9]+_", "", label) %in% permitted_leca_duplication_LCA_nodelabels)
     
     # Minimum species filter
@@ -513,10 +547,65 @@ for (curr_taxid in eukaryote_reference_species_list) {
   gene_table_all <- rbind(gene_table_all, gene_table_curr)
 }
 
-
 # Add proteins from mtDNA-rich euks
 gene_table_all <- rbind(gene_table_all, gene_table_add_mtdna_rich_euks_agg)
 gene_table_all <- gene_table_all[!duplicated(gene_table_all),]
+
+
+## Generate gene table for all homologs (mito + nonmito). Only primary OGs.
+gene_table_all_primary <- c()
+for (i in 1:nrow(tax_levels_df)) {
+  tax_levels_df_curr <- tax_levels_df[i,]
+  print(tax_levels_df_curr$label)
+  
+  progs_long_filter <- progs_long_agg %>% filter(grepl(tax_levels_df_curr$label, PROG_id, fixed=TRUE)) %>% filter(BOOL_primary_OG) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
+  
+  # Select PhROGs present at the tax level or inherited from earlier tax level
+  if (tax_levels_df_curr$node_index != Ntip(tree)+1) {
+    # If not the root, find rows that are present at the current tax level or were present in ancestor
+    ancestor_node_index <- tree$edge[tree$edge[,2] == tax_levels_df_curr$node_index,1]
+    gene_table_ancestor <- gene_table_all_primary %>% filter(node == ancestor_node_index)
+    
+    parent_OG_protein_ids <- paste0(gene_table_ancestor$origin_family, "_", gene_table_ancestor$protein_id)
+    OG_protein_ids <- paste0(progs_long_filter$OG_id, "_", progs_long_filter$protein_id)
+    present_PhROG_ids <- unique(progs_long_filter$PROG_id[which(progs_long_filter$label == tax_levels_df_curr$label | OG_protein_ids %in% parent_OG_protein_ids)])
+    progs_long_filter <- progs_long_filter %>% filter(PROG_id %in% present_PhROG_ids)
+    
+  } else {
+    # If root, find rows that are present at the current tax level or Eukaryota_parent primary (to include duplications within LECA that have a post-LECA LCA)
+    parent_OG_protein_ids <- paste0(parent_progs_long_primary_eukaryota$OG_id, "_", parent_progs_long_primary_eukaryota$protein_id)
+    OG_protein_ids <- paste0(progs_long_filter$OG_id, "_", progs_long_filter$protein_id)
+    present_PhROG_ids <- unique(progs_long_filter$PROG_id[which(progs_long_filter$label == tax_levels_df_curr$label | OG_protein_ids %in% parent_OG_protein_ids)])
+    progs_long_filter <- progs_long_filter %>% filter(PROG_id %in% present_PhROG_ids)
+    
+    # Require that it be present in a euk supergroup indicating breadth of coverage
+    permitted_leca_duplication_LCA_nodelabels <- unique(c("Eukaryota", "Opimoda", "Amorphea_CRuMs", "Amorphea", "Obazoa", "Diphoda", "Diaphorectickes", "CAM_Haptista", "CAM", "Archaeplastida", uniprot_proteomes_tax$superfamily[uniprot_proteomes_tax$domain == "Eukaryota"])) # same nodelabels used for HGT detection
+    progs_long_filter <- progs_long_filter %>% group_by(PROG_id) %>% filter(gsub("Node[0-9]+_", "", label) %in% permitted_leca_duplication_LCA_nodelabels)
+    
+    # Minimum species filter
+    progs_long_filter <- progs_long_filter %>% group_by(PROG_id) %>% filter(length(unique(taxid)) >= n_minimum_species_leca)
+    
+  }
+  
+  progs_long_filter <- progs_long_filter %>% rowwise() %>% mutate(mito_localization_prob_max = max(mito_localization_prob_mk, mito_localization_prob_parsimony, 0, na.rm=TRUE))
+  
+  gene_table_all_primary_curr <- data.frame(node = tax_levels_df_curr$node_index, gene_id = progs_long_filter$PROG_id, origin_family = progs_long_filter$OG_id, protein_id = progs_long_filter$protein_id, mito_localization_prob = progs_long_filter$mito_localization_prob_max, stringsAsFactors = FALSE)
+  gene_table_all_primary <- rbind(gene_table_all_primary, gene_table_all_primary_curr)
+}
+
+# Get reference species whole proteomes. Only primary OGs
+for (curr_taxid in eukaryote_reference_species_list) {
+  ogs_long_primary_curr <- ogs_long_primary %>% filter(taxid == curr_taxid)
+  deeploc_results_curr_species <- deeploc_results %>% filter(taxid == curr_taxid)
+  deeploc_results_curr_species_mito_prob <- deeploc_results_curr_species$Mitochondrion[match(ogs_long_primary_curr$accession, deeploc_results_curr_species$Protein_ID)]
+  gene_table_curr <- data.frame(node = match(curr_taxid, tree_labels), gene_id = ogs_long_primary_curr$accession, origin_family = ogs_long_primary_curr$Orthogroup, protein_id = ogs_long_primary_curr$accession, mito_localization_prob = deeploc_results_curr_species_mito_prob)
+  gene_table_all_primary <- rbind(gene_table_all_primary, gene_table_curr)
+}
+
+# Add proteins from mtDNA-rich euks
+gene_table_all_primary <- rbind(gene_table_all_primary, gene_table_add_mtdna_rich_euks_agg)
+gene_table_all_primary <- gene_table_all_primary[!duplicated(gene_table_all_primary),]
+
 
 
 ### Categorize losses
@@ -566,7 +655,7 @@ for (curr_label in tree_labels) {
   complete_loss_undetectable$type <- "Possible loss (limited by homology detection)"
 
   # Lost all mito homologs: have only nonmito homologs in descendant and no direct descendants
-  lost_all_mito_homologs <- lost_from_mito %>% rowwise() %>% filter(!origin_family %in% present_in_descendant$origin_family) %>% filter(!any(unlist(strsplit(protein_id, split=",")) %in% c(complete_loss_protein_ids, gene_table_all_descendant_protein_ids))) # MODIFIED
+  lost_all_mito_homologs <- lost_from_mito %>% rowwise() %>% filter(!origin_family %in% present_in_descendant$origin_family) %>% filter(!any(unlist(strsplit(protein_id, split=",")) %in% c(complete_loss_protein_ids, gene_table_all_descendant_protein_ids)))
   lost_all_mito_homologs_protein_ids <- unlist(strsplit(lost_all_mito_homologs$protein_id, split=","))
   # Absense-HMM
   parent_progs_long_curr <- parent_progs_long %>% filter(protein_id %in% lost_all_mito_homologs_protein_ids)
@@ -582,7 +671,7 @@ for (curr_label in tree_labels) {
   lost_all_mito_homologs_undetectable$type <- "Possible loss (limited by homology detection)"
 
   # Relocated: have only nonmito homologs in descendant and has a direct descendant
-  relocated <- lost_from_mito %>% rowwise() %>% filter(!origin_family %in% present_in_descendant$origin_family) %>% filter(!any(unlist(strsplit(protein_id, split=",")) %in% c(complete_loss_protein_ids, lost_all_mito_homologs_protein_ids))) # MODIFIED
+  relocated <- lost_from_mito %>% rowwise() %>% filter(!origin_family %in% present_in_descendant$origin_family) %>% filter(!any(unlist(strsplit(protein_id, split=",")) %in% c(complete_loss_protein_ids, lost_all_mito_homologs_protein_ids)))
   relocated_protein_ids <- unlist(strsplit(relocated$protein_id, split=","))
   relocated$type <- "Relocated to nonmito"
 
@@ -644,7 +733,7 @@ for (curr_label in tree_labels) {
     present_in_ancestor_curr_origin_family <- unique(present_in_ancestor_curr$origin_family)
     present_in_ancestor_curr_protein_ids <- unlist(strsplit(present_in_ancestor_curr$protein_id, ","))
     
-    descendant_candidate_duplications <- present_in_descendant %>% rowwise() %>% filter(origin_family %in% present_in_ancestor_curr_origin_family) %>% filter(any(unlist(strsplit(protein_id, ",")) %in% present_in_ancestor_curr_protein_ids)) ## MODIFIED
+    descendant_candidate_duplications <- present_in_descendant %>% rowwise() %>% filter(origin_family %in% present_in_ancestor_curr_origin_family) %>% filter(any(unlist(strsplit(protein_id, ",")) %in% present_in_ancestor_curr_protein_ids))
     
     if (nrow(descendant_candidate_duplications) > 1) {
       descendant_duplications <- rbind(descendant_duplications, descendant_candidate_duplications)
