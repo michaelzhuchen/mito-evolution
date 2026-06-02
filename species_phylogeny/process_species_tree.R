@@ -5,8 +5,12 @@ library(ape)
 library(phytools)
 library(TreeTools)
 
+
+dataset_name <- "species_tree_1"
+
+
 # Read in inferred species tree
-inferred_species_tree <- read.tree(here("data/species_phylogeny/maximum_likelihood_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_partitionfile.nex_MFMERGE_rcluster10.best_scheme_constrained.ncbi.tree.manual.changes.v7.1412taxa.contree"))
+inferred_species_tree <- read.tree(here("data/species_phylogeny/maximum_likelihood_species_tree", dataset_name, "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_partitionfile.nex_MFMERGE_rcluster10.best_scheme_constrained.ncbi.tree.manual.changes.v7.1412taxa.contree"))
 
 # Read in prokspp data
 bacteria_tax_collapse <- read.table(here("data/taxonomy", "bacteria_taxids_collapse_for_ncbi_taxonomy_tree_taxids_manual.changes.v6.tsv"), sep="\t", header=TRUE)
@@ -79,4 +83,4 @@ inferred_species_tree_rooted$node.label[38] <- "Node38_CAM"
 inferred_species_tree_rooted$node.label[39] <- "Node39_Archaeplastida"
 
 # ## Write out
-# write.tree(here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree"))
+# write.tree(here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk")))
