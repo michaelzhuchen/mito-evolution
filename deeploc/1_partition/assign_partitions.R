@@ -6,23 +6,23 @@ library(Biostrings)
 
 
 ## Select training dataset
-# all species
-suffix <- "mitoPCP.mitoonlyPCP.nonmitoPCP_all"
+# Include all species
+suffix <- "PCP_All_2026.04.05"
 
-# leave out Aca
-# suffix <- "mitoPCP.mitoonlyPCP.nonmitoPCP_LOO.Aca"
+# Leave out Acanthamoeba
+# suffix <- "LOO.Ac_2026.04.05"
 
-# leave out kinetoplastids
-# suffix <- "mitoPCP.mitoonlyPCP.nonmitoPCP_LOO.lta.tbr"
+# Leave out kinetoplastids (Trypanosoma and Leishmania)
+# suffix <- "LOO.Lt.Tb_2026.04.05"
 
-# leave out Ath
-# suffix <- "mitoPCP.mitoonlyPCP.nonmitoPCP_LOO.ath"
+# Leave out Arabidopsis
+# suffix <- "LOO.At_2026.04.05"
 
-# leave out Bdi
-# suffix <- "mitoPCP.mitoonlyPCP.nonmitoPCP_LOO.bdi"
+# Leave out Babesia
+# suffix <- "LOO.Bd_2026.04.05"
 
-# leave out Giardia
-# suffix <- "mitoPCP.mitoonlyPCP.nonmitoPCP_LOO.gla"
+# Leave out Giardia
+# suffix <- "LOO.Gl_2026.04.05"
 
 
 ## Read in data
@@ -30,13 +30,14 @@ suffix <- "mitoPCP.mitoonlyPCP.nonmitoPCP_all"
 multisub_labels_swissprot_mitoepi <- read.csv(here("data/deeploc/data_files", paste0("multisub_swissprot.retained_added.", suffix, ".csv")))
 
 # Read in partitions from graphpart
-graphpart_assignments <- read.csv(here("data/deeploc/graphpart", paste0("swissprot_", suffix, ".fasta_pident0.3_expect1_nopriority/graphpart_assignments.csv")))
+graphpart_assignments <- read.csv(here("data/deeploc/graphpart", paste0("swissprot_", suffix, ".fasta_pident0.3_expect1_nopriority"), "graphpart_assignments.csv"))
 
 # Assign partition
 multisub_labels_swissprot_mitoepi$Partition <- graphpart_assignments$cluster[match(multisub_labels_swissprot_mitoepi$ACC, graphpart_assignments$AC)]
 table(multisub_labels_swissprot_mitoepi$Partition)
 
-# Randomize order
+# Random order
+set.seed(42)
 multisub_labels_swissprot_mitoepi$X <- sample(1:nrow(multisub_labels_swissprot_mitoepi))
 multisub_labels_swissprot_mitoepi <- multisub_labels_swissprot_mitoepi[order(multisub_labels_swissprot_mitoepi$X),]
 
@@ -59,12 +60,10 @@ multisub_labels_swissprot_mitoepi_nomissing_nan[is.na(multisub_labels_swissprot_
 swissprot_fasta <- readAAStringSet(here("data/deeploc/swissprot", "deeploc_swissprot.fasta"))
 mitoepi_fasta <- readAAStringSet(here("data/deeploc/mitotol", "mitoepi_species_combined.fasta")) # all MITO-EPI species proteins
 combined_fasta <- c(mitoepi_fasta, swissprot_fasta)
-names(combined_fasta)[grep("^1257118_", names(combined_fasta))] <- gsub("_t.*", "", names(combined_fasta)[grep("^1257118_", names(combined_fasta))])
 
 combined_fasta_for_train <- combined_fasta[multisub_labels_swissprot_mitoepi_nomissing$ACC]
 
 # Trim sequences to maximum input length for ProtT5 model (4000 residues)
-library(Biostrings)
 maxLen  <- 4000L
 halfLen <- maxLen %/% 2L
 
@@ -80,7 +79,6 @@ trim_middle <- function(x) {
   xscat(left, right)
 }
 
-#    lapply gives a list of AAString objects, which we then re-wrap into an AAStringSet
 trimmed_list <- lapply(combined_fasta_for_train, trim_middle)
 combined_fasta_for_train_trimmed      <- AAStringSet(trimmed_list)
 names(combined_fasta_for_train_trimmed) <- names(combined_fasta_for_train)

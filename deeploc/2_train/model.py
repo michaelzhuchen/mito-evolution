@@ -6,13 +6,36 @@ import torch.nn.functional as F
 from .attr_prior import *
 from src.constants import *
 
-# pos_weights_bce = torch.tensor([1,1,1,3,2.3,4,9.5,4.5,6.6,7.7,32]) # original Swiss-Prot data
-pos_weights_bce = torch.tensor([1,1,1,3.1,2.4,2.4,9.6,4.6,6.6,7.7,32.5]) # mitoPCP.mitoonlyPCP.nonmito all graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,4,9.5,4.5,6.6,7.7,32]) # original data
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,2.9,9.5,4.5,6.6,7.7,32]) # mitoepi
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,1.9,9.5,4.5,6.6,7.7,32]) # mitoonlyPCP
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,2.7,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmitoPCP
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,1.7,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,1.5,9.5,4.5,6.6,7.7,32]) # mitoonlyPCP graphpart.expect1
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,1.3,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP graphpart.expect1
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,1.5,9.5,4.5,6.6,7.7,32]) # mitoonlyPCP graphpart.expect1e-3
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,2.5,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmito graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,2.6,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmitoPCP LOO.Aca graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,3.6,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmitoPCP LOO.kinetoplastids graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,2.5,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmito hsa.sce.aca.gla.ath.tbr.ltaref graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,2.6,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmito hsa.sce.gla.ath.tbr.ltaref LOO.aca graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,3.3,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmito hsa.sce.aca.gla.ath LOO.tbr.ltaref graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,2.4,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmito hsa.sce.aca.ath.tbr.ltaref LOO.gla graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3,2.3,2.5,9.5,4.5,6.6,7.7,32]) # mitoPCP.mitoonlyPCP.nonmito hsa.sce.aca.gla.ath.tbr.ltaref graphpart.expect1.nopriority
+# pos_weights_bce = torch.tensor([1,1,1,3.1,2.4,2.4,9.6,4.6,6.6,7.7,32.5]) # mitoPCP.mitoonlyPCP.nonmito all graphpart.expect1.nopriority
 # pos_weights_bce = torch.tensor([1,1,1,3.1,2.4,2.5,9.5,4.5,6.6,7.7,32.3]) # mitoPCP.mitoonlyPCP.nonmito LOO.Aca graphpart.expect1.nopriority
 # pos_weights_bce = torch.tensor([1.1,1,1,3.1,2.4,3.1,9.5,4.5,6.6,7.7,32.2]) # mitoPCP.mitoonlyPCP.nonmito LOO.lta.tbr graphpart.expect1.nopriority
 # pos_weights_bce = torch.tensor([1,1,1,3.1,2.4,2.5,9.4,4.5,6.6,7.7,32.3]) # mitoPCP.mitoonlyPCP.nonmito LOO.ath graphpart.expect1.nopriority
 # pos_weights_bce = torch.tensor([1,1,1,3.1,2.4,2.5,9.5,4.5,6.6,7.7,32.3]) # mitoPCP.mitoonlyPCP.nonmito LOO.bdi graphpart.expect1.nopriority
 # pos_weights_bce = torch.tensor([1,1,1,3.1,2.4,2.4,9.6,4.5,6.6,7.7,32.5]) # mitoPCP.mitoonlyPCP.nonmito LOO.gla graphpart.expect1.nopriority
+
+# pos_weights_bce = torch.tensor([1.00,1.01,1.03,3.14,2.40,2.71,9.61,4.57,6.66,7.76,32.7]) # PCP_All_2026.04.05
+# pos_weights_bce = torch.tensor([1.01,1.00,1.02,3.09,2.37,2.75,9.51,4.53,6.59,7.71,32.4]) # PCP_LOO.Ac_2026.04.05
+# pos_weights_bce = torch.tensor([1.01,1.00,1.02,3.09,2.37,2.77,9.41,4.52,6.57,7.71,32.3]) # PCP_LOO.At_2026.04.05
+# pos_weights_bce = torch.tensor([1.08,1.00,1.02,3.11,2.37,3.59,9.53,4.52,6.59,7.68,32.3]) # PCP_LOO.Lt.Tb_2026.04.05
+# pos_weights_bce = torch.tensor([1.01,1.00,1.02,3.11,2.37,2.80,9.52,4.51,6.58,7.67,32.5]) # PCP_LOO.Bd_2026.04.05
+pos_weights_bce = torch.tensor([1.00,1.01,1.03,3.14,2.39,2.62,9.61,4.56,6.63,7.74,32.7]) # PCP_LOO.Gl_2026.04.05
+
 
 def focal_loss(input, target, gamma=1):
     mask = (~torch.isnan(target)).float()

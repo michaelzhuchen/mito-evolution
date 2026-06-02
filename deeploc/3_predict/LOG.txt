@@ -12,6 +12,7 @@
 3) Compile DeepLoc2.0 using the updated model weights:
 	cd deeploc2_package
 	source .venv/bin/activate
+	rm -rf build
 	python -m pip install .
 
 3) Make predictions using the retrained DeepLoc2.0 model:
