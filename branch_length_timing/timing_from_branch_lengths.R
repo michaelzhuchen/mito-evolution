@@ -12,20 +12,26 @@ library(RColorBrewer)
 library(phytools)
 theme_set(theme_classic())
 
+
+## Specify dataset
+dataset_name <- "species_tree_1"
+archaeplastida_node_label <- "Node39_Archaeplastida"
+
+
 ### Read in datasets
 # Read in experimental and mtDNA mito proteins
-gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_2025.09.30.tsv"), sep="\t", header=TRUE)
+gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_2026.04.05.tsv"), sep="\t", header=TRUE)
 
 ## Read in human MitoPathways
 # Read in mapping of human gene IDs to uniprot
-human_id2training_mito <- read.table(here("data/orthogroups/idmapping", "human.id2training_uniprot_symbols.txt"), sep="\t", header=TRUE)
-human_id2training_mito <- human_id2training_mito[order(human_id2training_mito$Symbol),]
+human_id2training <- read.table(here("data/orthogroups/idmapping", "human.id2training_uniprot_symbols.txt"), sep="\t", header=TRUE)
+human_id2training <- human_id2training[order(human_id2training$Symbol),]
 # Read in human MitoPathways
 mitopathways <- read.table(here("data/mito_orthogroups", "human.path2gene.txt"), sep="\t", header=TRUE)
-mitopathways_human_id2training_mito <- merge(mitopathways, human_id2training_mito, by.x="Gene", by.y="Symbol")
-mitopathways_human_id2training_mito$gene_accession <- paste0("9606_", mitopathways_human_id2training_mito$Entry)
+mitopathways_human_id2training <- merge(mitopathways, human_id2training, by.x="Gene", by.y="Symbol")
+mitopathways_human_id2training$gene_accession <- paste0("9606_", mitopathways_human_id2training$Entry)
 
-mitopathways_OGs <- merge(gold_gene_accession_OG_id_df, mitopathways_human_id2training_mito, by="gene_accession")
+mitopathways_OGs <- merge(gold_gene_accession_OG_id_df, mitopathways_human_id2training, by="gene_accession")
 mitopathways_OGs_summary <- mitopathways_OGs %>% group_by(OG_id, MitoPathwayHierarchy) %>% summarize(count = n(), .groups = "keep")
 mitopathways_OGs_summary %>% filter(!grepl("\\.", MitoPathwayHierarchy))
 mitopathways_OGs_summary_filter <- mitopathways_OGs_summary %>% filter(count == max(count))
@@ -39,9 +45,8 @@ colnames(origin_table) <- c("OG_id", "n_euk_species_largest_euk_clade", "n_prok_
 origin_table$OG_id <- gsub(".faa_clipkit.gappy.msa", "", origin_table$OG_id, fixed=TRUE)
 prok_origin_OG_ids <- origin_table$OG_id[origin_table$origin_domain == "Prokaryote"]
 
-# Read in OGs
-ogs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
-colnames(ogs_long) <- c("accession", "Orthogroup", "taxid", "BOOL_PRIMARY_OG")
+# Read in subsampled orthogroups
+split_OGs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_subsampled_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
 
 ## Find pre-LECA duplications
 completed_mitoproteomes_species_list <- c("9606", "559292", "3702", "1257118", "5689", "185431", "5741", "32595")
@@ -50,24 +55,24 @@ eukaryote_reference_species_list <- completed_mitoproteomes_species_list # defau
 ## Set mito localization thresholds for Mk model and parsimony model
 deeploc_thresholds <- read.csv(here("data/deeploc", "deeploc_thresholds.csv"))
 deeploc_mito_threshold <- deeploc_thresholds$threshold[deeploc_thresholds$label == "Mitochondrion"]
-mito_localization_prob_mk_threshold <- deeploc_mito_threshold
+mito_localization_prob_mk_threshold <- 0.5
 mito_localization_prob_parsimony_threshold <- 0.5
 
 # Read in taxonomic data
 uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 
 # Read in Eukaryota_parent PhROGs
-phrogs_long_eukaryota_parent <- read.table(here("data/phylogenetically_resolved_orthogroups", "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
+phrogs_long_eukaryota_parent <- read.table(here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(phrogs_long_eukaryota_parent) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
-phrogs_long_eukaryota_parent <- phrogs_long_eukaryota_parent %>% filter(BOOL_primary_OG) %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
+phrogs_long_eukaryota_parent <- phrogs_long_eukaryota_parent %>% filter(BOOL_primary_OG) %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% ungroup() %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
 
 # Read in Eukaryota_child PhROGs
-progs_long <- read.table(file.path("data/phylogenetically_resolved_orthogroups", "PhROGs_long", paste0("PhROGs_at_Node34_Eukaryota_long.tsv")), sep="\t", header=TRUE)
+progs_long <- read.table(file.path("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", paste0("PhROGs_at_Node34_Eukaryota_long.tsv")), sep="\t", header=TRUE)
 colnames(progs_long) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
-phrogs_long_eukaryota <- phrogs_long_eukaryota %>% filter(BOOL_primary_OG) %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
+phrogs_long_eukaryota <- phrogs_long_eukaryota %>% filter(BOOL_primary_OG) %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% ungroup() %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
 
 ## Get reconstructed LECA whole proteome PhROGs/OGs
-leca_OG_PhROG_ids <- read.table(here("data/reconstruction", "leca_PhROG_OG_ids_corespecies_deeplocmc.min5spp_Eukaryota.parent.2supergroups.min4spp.filter.txt"))$V1
+leca_OG_PhROG_ids <- read.table(here("data/reconstruction", dataset_name, "leca_PhROG_OG_ids.txt"))$V1
 phrogs_long_eukaryota_leca <- phrogs_long_eukaryota %>% filter(PROG_id %in% leca_OG_PhROG_ids)
 phrogs_long_eukaryota_parent_leca <- phrogs_long_eukaryota_parent %>% filter(label == "Node34_Eukaryota")
 
@@ -77,7 +82,7 @@ phrogs_long_eukaryota_leca <- phrogs_long_eukaryota_leca %>% group_by(PROG_id) %
 phrogs_long_eukaryota_parent_leca <- phrogs_long_eukaryota_parent_leca %>% group_by(PROG_id) %>% filter(length(unique(taxid)) >= n_minimum_species_leca)
 
 ## Get reconstructed LECA mito PhROGs
-leca_mito_PhROG_ids <- read.table(here("data/reconstruction", "leca_mito_PhROG_ids_corespecies_deeplocmc.min5spp_Eukaryota.parent.2supergroups.min4spp.filter.txt"))$V1
+leca_mito_PhROG_ids <- read.table(here("data/reconstruction", dataset_name, "leca_mito_PhROG_ids.txt"))$V1
 phrogs_long_eukaryota_leca_mito <- phrogs_long_eukaryota %>% filter(PROG_id %in% leca_mito_PhROG_ids)
 phrogs_long_eukaryota_parent_leca_mito <- phrogs_long_eukaryota_parent_leca %>% group_by(PROG_id) %>% filter(mito_localization_prob_mk >= mito_localization_prob_mk_threshold | mito_localization_prob_parsimony >= mito_localization_prob_parsimony_threshold)
 # Filter out DeepLocMC predictions below a minimum number of species with predicted mito protein
@@ -185,28 +190,26 @@ phrogs_long_eukaryota_parent_leca_prok_or_dup_OG_ids <- unique(c(phrogs_long_euk
 # Branch length analysis
 library(ggridges)
 
-bl_df <- read.table(here("data/branch_length_timing", "branch_lengths_Node34_Eukaryota_combined.tsv"), sep="\t", header=FALSE)
+bl_df <- read.table(here("data/branch_length_timing", dataset_name, "branch_lengths_Node34_Eukaryota.tsv"), sep="\t", header=FALSE)
 colnames(bl_df) <- c("OG_id", "parent_PhROG_id", "child_PhROG_id", "median_euk_clade_bl", "mean_euk_clade_bl", "sd_euk_clade_bl", "stem_bl", "normalized_stem_bl", "duplication_bl", "normalized_duplication_bl", "oldest_duplication_bl", "normalized_oldest_duplication_bl")
 
 # Filter for LECA nodes (strict! require that clade LCA is LECA to guarantee existence of a LECA node and has minimum number of species)
 Node34_Eukaryota_PhROG_ids <- unique(phrogs_long_eukaryota$PROG_id[phrogs_long_eukaryota$label == "Node34_Eukaryota"])
 bl_df <- bl_df %>% filter(child_PhROG_id %in% Node34_Eukaryota_PhROG_ids)
 
-# Filter for LECA OGs that have prokaryote origin or pre-LECA duplication 
-bl_df <- bl_df %>% filter(OG_id %in% phrogs_long_eukaryota_parent_leca_prok_or_dup_OG_ids)
-
-# Label with mito localization
+# Label with LECA mito localization
 bl_df <- bl_df %>% mutate(is_MitoCarta = child_PhROG_id %in% leca_mito_PhROG_ids)
 
 # Log normalize
 bl_df <- bl_df %>% mutate(neglog10_normalized_stem_bl = -log10(normalized_stem_bl), neglog10_normalized_duplication_bl = -log10(normalized_duplication_bl), neglog10_normalized_oldest_duplication_bl = -log10(normalized_oldest_duplication_bl))
 
-## Combined length by GO cellular compartment
-bl_stem <- bl_df %>% filter(!is.na(neglog10_normalized_stem_bl) & !is.infinite(neglog10_normalized_stem_bl))
-bl_dup <- bl_df %>% filter(!is.na(neglog10_normalized_oldest_duplication_bl) & !is.infinite(neglog10_normalized_oldest_duplication_bl))
-bl_dup <- bl_dup %>% filter(is.na(neglog10_normalized_stem_bl))
-bl_combined <- data.frame(OG_id = c(bl_stem$OG_id, bl_dup$OG_id), parent_PhROG_id = c(bl_stem$parent_PhROG_id, bl_dup$parent_PhROG_id), child_PhROG_id = c(bl_stem$child_PhROG_id, bl_dup$child_PhROG_id), type = c(rep("Acquisition", nrow(bl_stem)), rep("Duplication", nrow(bl_dup))), is_MitoCarta = c(bl_stem$is_MitoCarta, bl_dup$is_MitoCarta), neglog10_normalized_branch_length = c(bl_stem$neglog10_normalized_stem_bl, bl_dup$neglog10_normalized_oldest_duplication_bl))
-bl_combined$type <- factor(bl_combined$type, levels = c("Acquisition", "Duplication"))
+
+
+### Ridgeline plots
+
+## Stem length by GO cellular compartment
+bl_combined <- bl_df %>% filter(!is.na(neglog10_normalized_stem_bl) & !is.infinite(neglog10_normalized_stem_bl))
+bl_combined <- bl_combined %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl)
 bl_go <- merge(bl_combined, phrogs_long_eukaryota_leca_go_counts, by.x="child_PhROG_id", by.y="PROG_id")
 bl_go$GO_name <- go_name_to_id_table$name[match(bl_go$goId_parent, go_name_to_id_table$goId_parent)]
 temp <- bl_go %>% filter(!is.na(neglog10_normalized_branch_length) & !is.infinite(neglog10_normalized_branch_length))
@@ -238,12 +241,12 @@ pairwise.wilcox.test(temp$neglog10_normalized_branch_length, temp$GO_name, p.adj
 # dev.off()
 
 ## Stem length by prokaryotic donor
-combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long <- read.table(here("data/horizontal_gene_transfer", "HGT_Node34_Eukaryota_long.tsv"), sep="\t", header=TRUE)
+combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long <- read.table(here("data/horizontal_gene_transfer", dataset_name, "HGT_Node34_Eukaryota_long.tsv"), sep="\t", header=TRUE)
 colnames(combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long) <- c("OG_id", "PhROG_id", "count", "fraction_euk_species", "sister_clade_fraction_euk_species", "cousin_clade_fraction_euk_species", "HGT_sister", "HGT_self_sister", "taxon", "bool_in_mito")
 temp <- bl_df %>% filter(!is.na(neglog10_normalized_stem_bl) & !is.infinite(neglog10_normalized_stem_bl))
 temp$prokaryotic_donor <- as.character(combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long$taxon[match(temp$parent_PhROG_id, combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long$PhROG_id)])
-temp$prokaryotic_donor[is.na(temp$prokaryotic_donor)] <- "Indeterminate"
-temp <- temp %>% filter(prokaryotic_donor != "Indeterminate")
+temp$prokaryotic_donor[is.na(temp$prokaryotic_donor)] <- "Unresolved"
+temp <- temp %>% filter(prokaryotic_donor != "Unresolved")
 other_bacteria_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Bacteria"]
 other_bacteria_ids <- other_bacteria_ids[other_bacteria_ids != "Alphaproteobacteria"]
 other_archaea_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Archaea"]
@@ -275,16 +278,13 @@ pairwise.wilcox.test(temp$neglog10_normalized_stem_bl, temp$prokaryotic_donor, p
 # dev.off()
 
 
-## Combined length by MitoPathway per gene
-bl_stem <- bl_df %>% filter(!is.na(neglog10_normalized_stem_bl) & !is.infinite(neglog10_normalized_stem_bl))
-bl_dup <- bl_df %>% filter(!is.na(neglog10_normalized_oldest_duplication_bl) & !is.infinite(neglog10_normalized_oldest_duplication_bl))
-bl_dup <- bl_dup %>% filter(is.na(neglog10_normalized_stem_bl))
-bl_combined <- data.frame(OG_id = c(bl_stem$OG_id, bl_dup$OG_id), parent_PhROG_id = c(bl_stem$parent_PhROG_id, bl_dup$parent_PhROG_id), child_PhROG_id = c(bl_stem$child_PhROG_id, bl_dup$child_PhROG_id), type = c(rep("Acquisition", nrow(bl_stem)), rep("Duplication", nrow(bl_dup))), is_MitoCarta = c(bl_stem$is_MitoCarta, bl_dup$is_MitoCarta), neglog10_normalized_branch_length = c(bl_stem$neglog10_normalized_stem_bl, bl_dup$neglog10_normalized_oldest_duplication_bl))
-bl_combined$type <- factor(bl_combined$type, levels = c("Acquisition", "Duplication"))
+## Stem length by MitoPathway per gene
+bl_combined <- bl_df %>% filter(!is.na(neglog10_normalized_stem_bl) & !is.infinite(neglog10_normalized_stem_bl))
+bl_combined <- bl_combined %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl)
 bl_combined <- bl_combined %>% filter(is_MitoCarta)
 
 # Get human mitopathways
-mitopathways_reduce <- mitopathways_human_id2training_mito[,c("Gene", "MitoPathway", "gene_accession")]
+mitopathways_reduce <- mitopathways_human_id2training[,c("Gene", "MitoPathway", "gene_accession")]
 phrogs_long_eukaryota_leca_mitopathways <- merge(phrogs_long_eukaryota_leca, mitopathways_reduce, by.x="protein_id", by.y="gene_accession", all.x = TRUE)
 bl_combined_mitopathway <- merge(bl_combined, phrogs_long_eukaryota_leca_mitopathways, by.x=c("OG_id", "child_PhROG_id"), by.y=c("OG_id", "PROG_id"))
 
@@ -301,18 +301,24 @@ bl_combined_mitopathway_labeled$mitopathway_type <- "Human_MitoPathway"
 bl_combined_mitopathway_missing$mitopathway_type <- "Imputed_MitoPathway"
 bl_combined_mitopathway <- rbind(bl_combined_mitopathway_labeled, bl_combined_mitopathway_missing)
 
-bl_combined_mitopathway <- bl_combined_mitopathway %>% filter(!is.na(MitoPathway)) %>% group_by(parent_PhROG_id, child_PhROG_id, MitoPathway, type, neglog10_normalized_branch_length) %>% summarize(Gene = paste0(sort(unique(Gene)), collapse=", "))
+bl_combined_mitopathway <- bl_combined_mitopathway %>% filter(!is.na(MitoPathway)) %>% group_by(parent_PhROG_id, child_PhROG_id, MitoPathway, type, neglog10_normalized_branch_length) %>% summarize(Gene = paste0(sort(unique(Gene)), collapse=", ")) %>% ungroup()
 
-# Add all mito proteins
-bl_combined_allmito <- bl_combined
-bl_combined_allmito$MitoPathway <- "mitochondrion"
-bl_combined_allmito$Gene <- bl_combined_allmito$child_PhROG_id
-bl_combined_mitopathway <- rbind(bl_combined_mitopathway, bl_combined_allmito[,colnames(bl_combined_allmito) %in% colnames(bl_combined_mitopathway)])
+# Add oxygen phenotype
+ogs_long_prok_summary_phenotypes <- read.table(here("data/prokaryote_phenotype", "prokaryote_phenotypes_LECA_mito_OGs.tsv"), sep="\t", header=TRUE)
+ogs_long_prok_summary_phenotypes <- ogs_long_prok_summary_phenotypes[order(ogs_long_prok_summary_phenotypes$log_odds_anaerobe_vs_aerobe, decreasing=TRUE),]
+mean_log_odds_anaerobe_vs_aerobe <- mean(ogs_long_prok_summary_phenotypes$log_odds_anaerobe_vs_aerobe[!is.infinite(ogs_long_prok_summary_phenotypes$log_odds_anaerobe_vs_aerobe)], na.rm=TRUE)
+sd_log_odds_anaerobe_vs_aerobe <- sd(ogs_long_prok_summary_phenotypes$log_odds_anaerobe_vs_aerobe[!is.infinite(ogs_long_prok_summary_phenotypes$log_odds_anaerobe_vs_aerobe)], na.rm=TRUE)
+anaerobic_OG_ids <- ogs_long_prok_summary_phenotypes$Orthogroup[which(ogs_long_prok_summary_phenotypes$log_odds_anaerobe_vs_aerobe > mean_log_odds_anaerobe_vs_aerobe + sd_log_odds_anaerobe_vs_aerobe)]
+bl_combined_anaerobic <- bl_combined %>% filter(OG_id %in% anaerobic_OG_ids)
+bl_combined_anaerobic$MitoPathway <- "Anaerobic"
+bl_combined_anaerobic$Gene <- bl_combined_anaerobic$child_PhROG_id
+bl_combined_mitopathway <- rbind(bl_combined_mitopathway, bl_combined_anaerobic[,colnames(bl_combined_anaerobic) %in% colnames(bl_combined_mitopathway)])
 
 bl_combined_mitopathway_select <- bl_combined_mitopathway
 bl_combined_mitopathway_select <- bl_combined_mitopathway_select[order(bl_combined_mitopathway_select$neglog10_normalized_branch_length, decreasing=FALSE),]
-selected_mitopathways <- c("Protein_import_sorting_and_homeostasis", "Small_molecule_transport", "OXPHOS", "Mitochondrial_central_dogma", "Metabolism")
+selected_mitopathways <- c("Anaerobic", "Carbohydrate_metabolism", "Protein_import_sorting_and_homeostasis", "OXPHOS", "Lipid_metabolism", "Amino_acid_metabolism", "Metals_and_cofactors", "Mitochondrial_ribosome", "Mitochondrial_ribosome_assembly", "Mitochondrial_central_dogma")
 bl_combined_mitopathway_select <- bl_combined_mitopathway_select %>% filter(MitoPathway %in% selected_mitopathways)
+bl_combined_mitopathway_select$MitoPathway[bl_combined_mitopathway_select$MitoPathway %in% c("Mitochondrial_ribosome_assembly")] <- "Mitochondrial_ribosome"
 bl_combined_mitopathway_select <- bl_combined_mitopathway_select %>% group_by(MitoPathway) %>% filter(!duplicated(Gene))
 temp_median <- bl_combined_mitopathway_select %>% group_by(MitoPathway) %>% summarize(median = median(neglog10_normalized_branch_length))
 temp_median <- temp_median[order(temp_median$median, decreasing=TRUE),]
@@ -341,12 +347,12 @@ pairwise.wilcox.test(bl_combined_mitopathway_select$neglog10_normalized_branch_l
 ### Archaeplastida branch length timings
 
 ## Get OGs with Archaeplastida nodes for branch length analysis
-phrogs_long_archaeplastida <- read.table(file.path("data/phylogenetically_resolved_orthogroups", "PhROGs_long", paste0("PhROGs_at_Node39_Archaeplastida_long.tsv")), sep="\t", header=TRUE)
+phrogs_long_archaeplastida <- read.table(file.path("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", paste0("PhROGs_at_Node39_Archaeplastida_long.tsv")), sep="\t", header=TRUE)
 colnames(phrogs_long_archaeplastida) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
-phrogs_long_archaeplastida <- phrogs_long_archaeplastida %>% filter(BOOL_primary_OG) %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
-phrogs_long_archaeplastida_ancestor <- phrogs_long_archaeplastida %>% filter(label == "Node39_Archaeplastida")
+phrogs_long_archaeplastida <- phrogs_long_archaeplastida %>% filter(BOOL_primary_OG) %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% ungroup() %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
+phrogs_long_archaeplastida_ancestor <- phrogs_long_archaeplastida %>% filter(label == archaeplastida_node_label)
 
-bl_df <- read.table(here("data/branch_length_timing", "branch_lengths_Node39_Archaeplastida_combined.tsv"), sep="\t", header=FALSE)
+bl_df <- read.table(here("data/branch_length_timing", dataset_name, "branch_lengths_Node39_Archaeplastida.tsv"), sep="\t", header=FALSE)
 colnames(bl_df) <- c("OG_id", "parent_PhROG_id", "child_PhROG_id", "median_euk_clade_bl", "mean_euk_clade_bl", "sd_euk_clade_bl", "stem_bl", "normalized_stem_bl", "duplication_bl", "normalized_duplication_bl", "oldest_duplication_bl", "normalized_oldest_duplication_bl")
 
 # Filter for Archaeplastida nodes (strict! require that clade LCA is Archaeplastida to guarantee existence of an Archaeplastida node)
@@ -361,11 +367,11 @@ bl_df <- bl_df %>% mutate(neglog10_normalized_stem_bl = -log10(normalized_stem_b
 
 ## Stem length by prokaryotic donor
 temp <- bl_df %>% filter(!is.na(neglog10_normalized_stem_bl) & !is.infinite(neglog10_normalized_stem_bl))
-combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long <- read.table(here("data/horizontal_gene_transfer", "HGT_Node39_Archaeplastida_long.tsv"), sep="\t", header=TRUE)
+combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long <- read.table(here("data/horizontal_gene_transfer", dataset_name, "HGT_Node39_Archaeplastida_long.tsv"), sep="\t", header=TRUE)
 colnames(combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long) <- c("OG_id", "PhROG_id", "count", "fraction_euk_species", "sister_clade_fraction_euk_species", "cousin_clade_fraction_euk_species", "HGT_sister", "HGT_self_sister", "taxon", "bool_in_mito")
 temp$prokaryotic_donor <- as.character(combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long$taxon[match(temp$parent_PhROG_id, combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long$PhROG_id)])
-temp$prokaryotic_donor[is.na(temp$prokaryotic_donor)] <- "Indeterminate"
-temp <- temp %>% filter(prokaryotic_donor != "Indeterminate")
+temp$prokaryotic_donor[is.na(temp$prokaryotic_donor)] <- "Unresolved"
+temp <- temp %>% filter(prokaryotic_donor != "Unresolved")
 other_bacteria_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Bacteria"]
 other_bacteria_ids <- other_bacteria_ids[!other_bacteria_ids %in% c("Alphaproteobacteria", "CyanobacteriotaMelainabacteriagroup")]
 other_archaea_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Archaea"]
@@ -396,7 +402,7 @@ pairwise.wilcox.test(temp$normalized_stem_bl, temp$prokaryotic_donor, p.adjust.m
 # dev.off()
 
 
-## Combined length by GO cellular compartment
+## Stem length by GO cellular compartment
 # Assign GO cellular components to children. Assign GO term if >50% of annotated proteins have the GO term.
 go_annot_orthogroups <- readRDS(here("data/annotation/GO", "GO_cellular_components_Archaeplastida_refined_OG_mapping.rds"))
 phrogs_long_archaeplastida_go <- merge(phrogs_long_archaeplastida, go_annot_orthogroups, by.x=c("protein_id", "OG_id"), by.y=c("accessions", "OG_id"))
@@ -415,11 +421,8 @@ phrogs_long_archaeplastida_go_counts <- phrogs_long_archaeplastida_go %>% group_
 phrogs_long_archaeplastida_go_counts <- phrogs_long_archaeplastida_go_counts %>% filter(normalized_weight >= 0.5)
 
 bl_stem <- bl_df %>% filter(!is.na(neglog10_normalized_stem_bl) & !is.infinite(neglog10_normalized_stem_bl))
-bl_dup <- bl_df %>% filter(!is.na(neglog10_normalized_oldest_duplication_bl) & !is.infinite(neglog10_normalized_oldest_duplication_bl))
-bl_dup <- bl_dup %>% filter(is.na(neglog10_normalized_stem_bl))
-bl_combined <- data.frame(OG_id = c(bl_stem$OG_id, bl_dup$OG_id), parent_PhROG_id = c(bl_stem$parent_PhROG_id, bl_dup$parent_PhROG_id), child_PhROG_id = c(bl_stem$child_PhROG_id, bl_dup$child_PhROG_id), type = c(rep("Acquisition", nrow(bl_stem)), rep("Duplication", nrow(bl_dup))), is_MitoCarta = c(bl_stem$is_MitoCarta, bl_dup$is_MitoCarta), neglog10_normalized_branch_length = c(bl_stem$neglog10_normalized_stem_bl, bl_dup$neglog10_normalized_oldest_duplication_bl))
+bl_combined <- bl_combined %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl)
 bl_go <- merge(bl_combined, phrogs_long_archaeplastida_go_counts, by.x="child_PhROG_id", by.y="PROG_id", all.x=TRUE)
-# bl_go <- merge(bl_df, phrogs_long_archaeplastida_go_counts, by.x="child_PhROG_id", by.y="PROG_id")
 bl_go$GO_name <- go_name_to_id_table$name[match(bl_go$goId_parent, go_name_to_id_table$goId_parent)]
 temp <- bl_go %>% filter(!is.na(neglog10_normalized_branch_length) & !is.infinite(neglog10_normalized_branch_length))
 temp <- temp %>% filter(!GO_name %in% c("mitochondrion", "cilium", "mitochondrial ribosome", "cell wall", "nuclear envelope"))
