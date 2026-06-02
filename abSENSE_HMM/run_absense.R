@@ -12,6 +12,7 @@ hmm_LOO_results_prefix <- args[2]
 alerax_dir <- args[3]
 posterior_clades_dir <- args[4]
 outdir <- args[5]
+dataset_name <- args[6]
 BOOL_verbose <- FALSE
 
 # Settings
@@ -20,10 +21,7 @@ species_overlap_threshold <- 0.1
 clade_purity_threshold <- 0.9
 species_overlap_support_threshold <- 0.5
 duplications_rec_support_threshold <- 0
-n_euk_species_in_dataset <- 203
-n_archaea_species_in_dataset <- 337
-n_bacteria_species_in_dataset <- 1737
-fraction_euk_species_threshold <- round(2 * (n_euk_species_in_dataset) / (n_euk_species_in_dataset + n_archaea_species_in_dataset + n_bacteria_species_in_dataset), digits=2)
+fraction_euk_species_threshold <- 0.18
 
 bitscore_at_expect_threshold <- 22.95 # corresponding to e-value = 0.001
 
@@ -50,7 +48,7 @@ hmmsearch_out_raw <- hmmsearch_out_raw[order(hmmsearch_out_raw$bitscore, decreas
 # Read in taxonomic data
 uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree"))
+species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", dataset_name, "species_tree_1.nwk"))
 species_tree_prok <- drop.tip(species_tree, uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Eukaryota"])
 species_tree_prok_labels <- c(species_tree_prok$tip.label, species_tree_prok$node.label)
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)

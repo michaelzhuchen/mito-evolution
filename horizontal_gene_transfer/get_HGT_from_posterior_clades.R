@@ -22,10 +22,7 @@ species_overlap_fraction_species_coverage_threshold <- 0.1
 clade_purity_threshold <- 0.9
 species_overlap_support_threshold <- 0.5
 duplications_rec_support_threshold <- 0
-n_euk_species_in_dataset <- 203
-n_archaea_species_in_dataset <- 337
-n_bacteria_species_in_dataset <- 1737
-fraction_euk_species_threshold <- round(2 * (n_euk_species_in_dataset) / (n_euk_species_in_dataset + n_archaea_species_in_dataset + n_bacteria_species_in_dataset), digits=2)
+fraction_euk_species_threshold <- 0.18
 hgt_fraction_support_threshold <- 0.5
 BOOL_FILTER_HGT_CLADE_PURITY <- TRUE
 BOOL_split_duplications_at_selected_tax_level <- FALSE

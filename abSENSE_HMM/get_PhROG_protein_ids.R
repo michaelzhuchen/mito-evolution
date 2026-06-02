@@ -2,12 +2,13 @@ suppressMessages(library(tidyverse))
 
 # Get command line arguments
 args <- commandArgs(trailingOnly=TRUE)
-phrogs_dir <- args[1]
+dataset_name <- args[1]
 out_dir <- args[2]
-OG_id <- args[3]
+selected_OG_id <- args[3]
 
 phrogs_long <- read.table(here("data/phylogenetically_resolved_orthogroups", "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(phrogs_long) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
+phrogs_long <- phrogs_long %>% filter(OG_id == selected_OG_id)
 
 # Remove duplicates to assign proteins to their largest PhROG (ignore non-vertical proteins that are in a larger PhROG)
 phrogs_long <- phrogs_long %>% filter(!duplicated(protein_id)) %>% filter(!grepl("dupelabel", protein_id, fixed=TRUE))
