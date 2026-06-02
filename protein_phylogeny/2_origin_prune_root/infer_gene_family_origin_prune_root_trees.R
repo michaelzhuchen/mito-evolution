@@ -86,7 +86,7 @@ if (length(rename_mtDNA_proteins) > 0) {
 
 
 # Read in species tree
-species_tree <- here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample.contree")
+species_tree <- here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree")
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
 
 # Read in uniprot tax data
