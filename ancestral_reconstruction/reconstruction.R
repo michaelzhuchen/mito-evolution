@@ -8,9 +8,9 @@ library(here)
 ### Select dataset
 dataset_name <- "species_tree_1"
 suffix <- "species_tree_1"
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree"))
-homology_power_agg <- read.table(here("data/abSENSE_HMM", "absense_results.tsv"), sep="\t", header=TRUE)
-homology_power_per_species <- read.table(here("data/abSENSE_HMM", "absense_results_per_species.tsv"), sep="\t", header=FALSE)
+species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk")))
+homology_power_agg <- read.table(here("data/abSENSE_HMM", dataset_name, "absense_results.tsv"), sep="\t", header=TRUE)
+homology_power_per_species <- read.table(here("data/abSENSE_HMM", dataset_name, "absense_results_per_species.tsv"), sep="\t", header=FALSE)
 
 ### Read in datasets
 # Read in experimental and mtDNA mito proteins
@@ -36,7 +36,7 @@ ogs_long_primary <- ogs_long %>% filter(BOOL_PRIMARY_OG)
 
 ## Load and process DeepLoc results
 # Read in DeepLoc results
-deeploc_results <- read.table(file.path(supplemental_data_directory, "TableS5_DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
+deeploc_results <- read.table(here("data/deeploc/predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
 colnames(deeploc_results) <- c("Protein_ID", "Mitochondrion")
 deeploc_results$taxid <- gsub("_.*", "", deeploc_results$Protein_ID)
 
@@ -46,9 +46,9 @@ deeploc_results <- merge(deeploc_results, ogs_long_reduce, by.x="Protein_ID", by
 
 # Fix organelle-encoded proteins
 all_nonmito_accessions <- read.table(here("data/deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
-all_mito_accessions <- read.table(here("data/deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
+all_mtdna_accessions <- read.table(here("data/deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
 deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% all_nonmito_accessions] <- 0
-deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% all_mito_accessions] <- 1
+deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% all_mtdna_accessions] <- 1
 
 # Mark experimentally-defined and mtDNA proteins
 completed_mitoproteomes_species_list <- c("9606", "559292", "3702", "1257118", "5689", "185431", "5741", "32595")
