@@ -3,42 +3,36 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(ape))
 suppressMessages(library(castor))
 
-# Get arguments from command line
-args <- commandArgs(trailingOnly=TRUE)
-base_dir <- args[1]
-split_transfer_trees_dir <- args[2]
-out_dir <- args[3]
-OG_id <- args[4]
-method <- args[5]
+# Get arguments
+dataset_name <- "species_tree_1"
+base_dir <- here("reconciled_trees_species.tree.1")
+out_dir <- here("reconciled_trees_posterior_clades_species.tree.1")
+split_transfer_trees_dir <- here(out_dir, "split_transfer_trees")
+OG_id <- "MOG0001047"
 BOOL_verbose <- FALSE
 
 BOOL_split_transfers_small_clades <- TRUE
 BOOL_filter_transfers_by_LCA_in_euk_supergroup <- TRUE
 posttransfer_clade_species_threshold <- 10
 posttransfer_clade_support_threshold <- 0.1
-BOOL_largest_euk_monophyletic_clade <- FALSE
-BOOL_exclude_prokaryotes <- FALSE
-BOOL_soft_LCA <- FALSE
 species_overlap_fraction_threshold <- 0.1
 
-reference_species <- c("9606", "559292", "3702", "1257118", "5689", "185431", "5741", "36329", "32595", "508771")
-incomplete_localization_data_species <- c("36329", "32595")
+dir.create(split_transfer_trees_dir, showWarnings = FALSE)
+
+reference_species <- c("9606", "559292", "3702", "1257118", "5689", "185431", "5741", "32595")
 
 ### Read in data
 # Read in sample of reconciled trees
-rec_trees_filename <- here("data/reconciled_trees", "/", OG_id, "/reconciliations/family_1.rec_uml") # for Alerax
+rec_trees_filename <- here("reconciled_trees_species.tree.1", OG_id, "reconciliations", "family_1.rec_uml") # for Alerax
 trees <- read.tree(rec_trees_filename)
 
 # Read in taxonomy data
 uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
-uniprot_proteomes_all_tax <- read.delim(here("data/taxonomy", "uniprot_all_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), header=TRUE)
 uniprot_proteomes_prok_tree_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain != "Eukaryota"]
 uniprot_proteomes_euk_tree_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Eukaryota"]
-uniprot_proteomes_bacteria_counts <- uniprot_proteomes_all_tax %>% filter(domain == "Bacteria") %>% group_by(tree_id) %>% summarize(n_species = n(), .groups="keep")
-uniprot_proteomes_archaea_counts <- uniprot_proteomes_all_tax %>% filter(domain == "Archaea") %>% group_by(tree_id) %>% summarize(n_species = n(), .groups="keep")
 
 # Read in species tree
-species_tree <- here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample.contree")
+species_tree <- here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk"))
 
 # Calculate node depths
 depths_df <- data.frame(label = c(species_tree$tip.label, species_tree$node.label), distance=get_all_distances_to_root(species_tree, as_edge_count=TRUE))
@@ -73,10 +67,10 @@ prokaryote_mmseqs2_clusters_taxids <- read.table(here("data/downsample_prokaryot
 
 ## Read in mito-localization data
 # Read in mito goldp gene list for binary labels: mito, non-mito
-gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_2025.09.30.tsv"), sep="\t", header=TRUE)
+gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_2026.04.05.tsv"), sep="\t", header=TRUE)
 
 # Read in DeepLoc results
-deeploc_results <- read.table(file.path(supplemental_data_directory, "TableS7_retrained_DeepLoc_predictions.tsv"), header=TRUE)
+deeploc_results <- read.table(here("data/deeploc/predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
 colnames(deeploc_results) <- c("Protein_ID", "Mitochondrion")
 
 # Read in organelle-encoded proteins
@@ -102,8 +96,8 @@ get_ancestor_node <- function(species_tree, index) {
 
 ### Identify and split recent horizontal gene transfers
 if (BOOL_split_transfers_small_clades) {
-  original_tree_index_list_filename <- paste0(split_transfer_trees_dir, "/split_transfer_trees/", OG_id, "_original_tree_index_list.txt")
-  completed_trees_filename <- paste0(split_transfer_trees_dir, "/split_transfer_trees/", OG_id, "_split_transfer_trees.rec_uml")
+  original_tree_index_list_filename <- file.path(split_transfer_trees_dir, paste0(OG_id, "_original_tree_index_list.txt"))
+  completed_trees_filename <- file.path(split_transfer_trees_dir, paste0(OG_id, "_split_transfer_trees.rec_uml"))
   
   # Check to see if output already exists
   BOOL_split_transfers_small_clades_completed <- file.exists(completed_trees_filename)
@@ -116,11 +110,7 @@ if (BOOL_split_transfers_small_clades) {
     trees_to_process <- trees
     species_tree_raw <- species_tree
     
-    if (method == "ALE") {
-      species_tree_euks <- get_subtree_at_node(species_tree_raw, which(species_tree_raw$node.label == "1375"))$subtree # for ALE
-    } else if (method == "AleRax") {
-      species_tree_euks <- get_subtree_at_node(species_tree_raw, which(species_tree_raw$node.label == "Node34_Eukaryota"))$subtree # for Alerax
-    }
+    species_tree_euks <- get_subtree_at_node(species_tree_raw, which(species_tree_raw$node.label == "Node34_Eukaryota"))$subtree
     
     species_tree_proks <- drop.tip(species_tree_raw, species_tree_euks$tip.label)
     species_tree_euks_labels <- c(species_tree_euks$tip.label, species_tree_euks$node.label)
@@ -135,7 +125,6 @@ if (BOOL_split_transfers_small_clades) {
       
       if (BOOL_verbose) {
         print(length(trees_to_process))
-        # print(curr_tree)
       }
       
       curr_tree_labels <- c(curr_tree$tip.label, curr_tree$node.label)
@@ -322,9 +311,9 @@ if (BOOL_split_transfers_small_clades) {
       }
     }
     
-    ## Write out the split transfer trees
-    # write.table(original_tree_index_list, original_tree_index_list_filename, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
-    # write.tree(completed_trees, completed_trees_filename)
+    # Write out the split transfer trees
+    write.table(original_tree_index_list, original_tree_index_list_filename, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+    write.tree(completed_trees, completed_trees_filename)
   }
 }
 
@@ -342,21 +331,13 @@ for (i in 1:length(trees)) {
   
   protein_accessions <- curr_tree$tip.label
   
-  # Remove transcript id for ACANB to match the goldp protein ids
-  if (any(grepl("^1257118_", protein_accessions))) {
-    protein_accessions_reformat <- protein_accessions
-    protein_accessions_reformat[grep("^1257118_", protein_accessions_reformat)] <- gsub("_t.*", "", protein_accessions_reformat[grep("^1257118_", protein_accessions_reformat)])
-  } else {
-    protein_accessions_reformat <- protein_accessions
-  }
-  
   # Mark states for reference species with complete localization data: binary mito or not mito
-  curr_tree_mito_localization_states[which(gsub("_.*", "", curr_tree$tip.label) %in% reference_species[!reference_species %in% incomplete_localization_data_species])] <- 1 # nonmito
-  curr_tree_mito_localization_states[which(protein_accessions_reformat %in% gold_gene_accession_OG_id_df$gene_accession)] <- 2 # mito
+  curr_tree_mito_localization_states[which(gsub("_.*", "", curr_tree$tip.label) %in% reference_species)] <- 1 # nonmito
+  curr_tree_mito_localization_states[which(protein_accessions %in% gold_gene_accession_OG_id_df$gene_accession)] <- 2 # mito
   
   # Ignore unedited mtDNA proteins and likely NUMTs in Arabidopsis for localization
   if (length(ath_uneditedmtdna_or_numt_proteins) > 0) {
-    curr_tree_mito_localization_states[which(protein_accessions_reformat %in% ath_uneditedmtdna_or_numt_proteins)] <- NA # ignore
+    curr_tree_mito_localization_states[which(protein_accessions %in% ath_uneditedmtdna_or_numt_proteins)] <- NA # ignore
   }
   
   ## Use prior
@@ -517,15 +498,6 @@ for (i in 1:length(trees)) {
   curr_result_df_sep_rows <- curr_result_df
   curr_result_df_sep_rows$clade_index <- 1:nrow(curr_result_df_sep_rows)
   
-  # Keep largest euk monophyletic clades
-  if (BOOL_largest_euk_monophyletic_clade) {
-    curr_result_df_sep_rows <- curr_result_df_sep_rows %>% filter(label_vertical %in% c(euk_species_subtree_labels, euk_protein_ids))
-    curr_result_df_sep_rows <- curr_result_df_sep_rows %>% rowwise() %>% mutate(n_proteins = length(unique(unlist(strsplit(reference_protein_ids, split=",")))))
-    curr_result_df_sep_rows <- curr_result_df_sep_rows[order(c(curr_result_df_sep_rows$n_proteins, 1/curr_result_df_sep_rows$distance_to_root), decreasing=TRUE),]
-    curr_result_df_sep_rows <- curr_result_df_sep_rows %>% separate_rows(reference_protein_ids, sep=",")
-    curr_result_df_sep_rows <- curr_result_df_sep_rows[!duplicated(curr_result_df_sep_rows$reference_protein_ids),]
-  }
-  
   vertical_result <- curr_result_df_sep_rows %>% group_by(OG_id, label_vertical, clade_index) %>% summarize(distance_to_root = mean(distance_to_root), reference_protein_ids = paste0(sort(unique(unlist(strsplit(reference_protein_ids, split=",")))), collapse=","), reference_protein_ids_nonvertical = paste0(sort(unique(unlist(strsplit(reference_protein_ids_nonvertical, split=",")))), collapse=","), species_overlap = mean(species_overlap), species_overlap_binary = mean(species_overlap_binary), species_overlap_taxids = paste0(sort(unique(unlist(strsplit(species_overlap_taxids, split=",")))), collapse=","), duplications_rec = mean(duplications_rec), mito_localization_prob = mean(mito_localization_prob), .groups = "keep")
   
   # Remove duplicates that can occur when dropping non-vertical proteins
@@ -590,8 +562,8 @@ if (BOOL_split_transfers_small_clades) {
 vertical_result_summary <- vertical_result_summary %>% rowwise() %>% mutate(n_species = length(unique(gsub("_.*", "", unlist(strsplit(reference_protein_ids, split=","))))), n_reference_proteins = length(unique(unlist(strsplit(reference_protein_ids, split=",")))))
 vertical_result_summary <- vertical_result_summary[order(vertical_result_summary$n_reference_proteins, 1/vertical_result_summary$distance_to_root, vertical_result_summary$count, decreasing=TRUE),]
 
-# Write out
-# write.table(vertical_result_summary, paste0(out_dir, "/", OG_id, "_euk_monophyletic_clades.tsv"), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
+## Write out
+write.table(vertical_result_summary, file.path(out_dir, paste0(OG_id, "_euk_monophyletic_clades.tsv")), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
 
 
 

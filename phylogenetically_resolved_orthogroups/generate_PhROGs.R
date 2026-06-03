@@ -3,16 +3,15 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(ape))
 suppressMessages(library(castor))
 
-# Get arguments from command line
-args <- commandArgs(trailingOnly=TRUE)
-base_dir <- args[1]
-out_dir <- args[2]
-OG_id <- args[3]
-selected_tax_levels_file <- args[4]
+# Get arguments
+dataset_name <- "species_tree_1"
+base_dir <- here("reconciled_trees_posterior_clades_species.tree.1")
+out_dir <- here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long")
+OG_id <- "MOG0001047"
 BOOL_verbose <- FALSE
 
 # Focal taxonomic levels for which to generate PhROGs
-selected_tax_levels <- read.table(here("phylogenetically_resolved_orthogroups", "selected_tax_levels_for_phrogs_wholeproteome.txt"), header=FALSE)$V1
+selected_tax_levels <- read.table(here("data/phylogenetically_resolved_orthogroups", paste0(dataset_name, "_tax_levels_for_phrogs_wholeproteome.txt")), header=FALSE)$V1
 
 filename <- paste0(OG_id, "_euk_monophyletic_clades.tsv")
 
@@ -22,13 +21,10 @@ species_overlap_fraction_species_coverage_threshold <- 0.1
 clade_purity_threshold <- 0.9
 species_overlap_support_threshold <- 0.5
 duplications_rec_support_threshold <- 0
-n_euk_species_in_dataset <- 203
-n_archaea_species_in_dataset <- 337
-n_bacteria_species_in_dataset <- 1737
-fraction_euk_species_threshold <- round(2 * (n_euk_species_in_dataset) / (n_euk_species_in_dataset + n_archaea_species_in_dataset + n_bacteria_species_in_dataset), digits=2)
+fraction_euk_species_threshold <- 0.18
 
 # euk203spp_prokgroups
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree"))
+species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk")))
 species_tree_euks_subtree <- get_subtree_at_node(species_tree, "Node34_Eukaryota")$subtree
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
 species_tree_euks_labels <- c(species_tree_euks_subtree$tip.label, species_tree_euks_subtree$node.label)
@@ -45,15 +41,8 @@ if (BOOL_verbose) {
   print("Preprocessing clades...")
 }
 # Read in posterior clades 
-monophyletic_clades <- read.table(paste0(base_dir, "/", filename), sep="\t")
-colnames(monophyletic_clades) <- c("OG_id", "label", "distance_to_root", "reference_protein_ids", "nonvertical_protein_ids", "count", "species_overlap", "species_overlap_support", "species_overlap_taxids", "duplications_rec", "mito_localization_prob", "n_species", "n_reference_proteins") # vtesting
-
-# euk203spp_prokgroups: Map species tree v1 nodelabels (manual assignments were incorrect due to off by one) to v2 nodelabels
-monophyletic_clades$label[which(monophyletic_clades$label == "Node138_Opimoda")] <- "Node138_Naegleria"
-monophyletic_clades$label[which(monophyletic_clades$label == "Node139_Amorphea_CRuMs")] <- "Node139_Opimoda"
-monophyletic_clades$label[which(monophyletic_clades$label == "Node140_Amorphea")] <- "Node140_Amorphea_CRuMs"
-monophyletic_clades$label[which(monophyletic_clades$label == "Node141_Obazoa")] <- "Node141_Amorphea"
-monophyletic_clades$label[which(monophyletic_clades$label == "Node142_Eukaryota")] <- "Node142_Obazoa"
+monophyletic_clades <- read.table(file.path(base_dir, filename), sep="\t")
+colnames(monophyletic_clades) <- c("OG_id", "label", "distance_to_root", "reference_protein_ids", "nonvertical_protein_ids", "count", "species_overlap", "species_overlap_support", "species_overlap_taxids", "duplications_rec", "mito_localization_prob", "n_species", "n_reference_proteins")
 
 # Map lta2019 to ltaref
 # Read in Lta mapping for Lta2019 to Ltaref
@@ -252,8 +241,8 @@ for (selected_tax_level in selected_tax_levels) {
   monophyletic_clades_filter_preceding_tax_level_sep_rows <- monophyletic_clades_filter_selected_tax_level_sep_rows %>% filter(duplication_label %in% ancestral_tax_labels)
   monophyletic_clades_filter_preceding_tax_level_sep_rows <- monophyletic_clades_filter_preceding_tax_level_sep_rows[order(monophyletic_clades_filter_preceding_tax_level_sep_rows$n_reference_proteins_total, monophyletic_clades_filter_preceding_tax_level_sep_rows$n_species_total, decreasing=TRUE),]
   
-  monophyletic_clades_filter_preceding_tax_level_sep_rows_duplications <- monophyletic_clades_filter_preceding_tax_level_sep_rows %>% filter(species_overlap >= species_overlap_threshold & species_overlap_support >= species_overlap_support_threshold & duplications_rec >= duplications_rec_support_threshold)
-  monophyletic_clades_filter_preceding_tax_level_sep_rows_noduplications <- monophyletic_clades_filter_preceding_tax_level_sep_rows %>% filter(!(species_overlap >= species_overlap_threshold & species_overlap_support >= species_overlap_support_threshold & duplications_rec >= duplications_rec_support_threshold))
+  monophyletic_clades_filter_preceding_tax_level_sep_rows_duplications <- monophyletic_clades_filter_preceding_tax_level_sep_rows %>% filter(species_overlap > species_overlap_threshold & species_overlap_support >= species_overlap_support_threshold & duplications_rec >= duplications_rec_support_threshold)
+  monophyletic_clades_filter_preceding_tax_level_sep_rows_noduplications <- monophyletic_clades_filter_preceding_tax_level_sep_rows %>% filter(!(species_overlap > species_overlap_threshold & species_overlap_support >= species_overlap_support_threshold & duplications_rec >= duplications_rec_support_threshold))
   
   if (BOOL_verbose) {
     write.table(monophyletic_clades_filter_preceding_tax_level_sep_rows, paste0(curr_out_dir, "/", OG_id, "_clades.tsv"), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
@@ -381,6 +370,6 @@ for (selected_tax_level in selected_tax_levels) {
   monophyletic_clades_filter_selected_tax_level_largest_clades_primary_OG_summary <- monophyletic_clades_filter_selected_tax_level_largest_clades_long %>% group_by(PhROG_id) %>% filter(!BOOL_NONVERTICAL) %>% summarize(fraction_primary_OG_for_vertical_proteins = sum(BOOL_primary_OG) / n())
   monophyletic_clades_filter_selected_tax_level_largest_clades$fraction_primary_OG_for_vertical_proteins <- monophyletic_clades_filter_selected_tax_level_largest_clades_primary_OG_summary$fraction_primary_OG_for_vertical_proteins[match(monophyletic_clades_filter_selected_tax_level_largest_clades$PhROG_id, monophyletic_clades_filter_selected_tax_level_largest_clades_primary_OG_summary$PhROG_id)]
   
-  # # Write out
-  # write.table(monophyletic_clades_filter_selected_tax_level_largest_clades_long, paste0(curr_out_dir, "/", OG_id, "_", original_selected_tax_level, "_PhROGs_long.tsv"), sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+  # Write out
+  write.table(monophyletic_clades_filter_selected_tax_level_largest_clades_long, file.path(curr_out_dir, paste0(OG_id, "_", original_selected_tax_level, "_PhROGs_long.tsv")), sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
 }

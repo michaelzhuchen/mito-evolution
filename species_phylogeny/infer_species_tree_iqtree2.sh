@@ -2,7 +2,7 @@
 
 N_CORES="16"
 
-DIR="zenodo_directory/species_phylogeny"
+DIR="data/species_phylogeny"
 MSA_FILE="$DIR/concatenated_msa/concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa"
 
 ## 1a. Infer optimal partition models without building tree, using rcluster heuristic for speedup

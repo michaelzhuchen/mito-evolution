@@ -31,9 +31,10 @@ inferred_species_tree$tip.label[which(inferred_species_tree$tip.label %in% prok_
 # Assign node labels
 inferred_species_tree$node.label <- paste0("Node", 1:inferred_species_tree$Nnode)
 
-# Root using phytools:reroot to root at the midpoint of the branch
-root_edge_length <- inferred_species_tree$edge.length[inferred_species_tree$edge[,2] == Ntip(inferred_species_tree)+375]
-inferred_species_tree_rooted <- reroot(inferred_species_tree, Ntip(inferred_species_tree)+375, position = root_edge_length/2)
+# Manually root using phytools:reroot at the midpoint of the branch
+root_node_id <- 375
+root_edge_length <- inferred_species_tree$edge.length[inferred_species_tree$edge[,2] == Ntip(inferred_species_tree)+root_node_id]
+inferred_species_tree_rooted <- reroot(inferred_species_tree, Ntip(inferred_species_tree)+root_node_id, position = root_edge_length/2)
 
 # Collapse identical tip labels
 tip_labels <- inferred_species_tree_rooted$tip.label
@@ -59,9 +60,9 @@ for (label in unique(duplicate_labels)) {
   inferred_species_tree_rooted$edge.length[edge_index] <- avg_length
 }
 
-# Sanity check the modified tree
-plot(inferred_species_tree_rooted)
-inferred_species_tree_rooted
+# # Sanity check the modified tree
+# plot(inferred_species_tree_rooted)
+# inferred_species_tree_rooted
 
 inferred_species_tree_rooted$node.label <- paste0("Node", 1:inferred_species_tree_rooted$Nnode)
 

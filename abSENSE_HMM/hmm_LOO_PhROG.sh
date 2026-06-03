@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BASEDIR="zenodo_directory/alignments_and_initial_trees"
+BASEDIR="alignments_and_initial_trees"
 DATASETNAME="species_tree_1"
 OUTDIR="output_directory"
 TEMPOUTDIR="tmp"

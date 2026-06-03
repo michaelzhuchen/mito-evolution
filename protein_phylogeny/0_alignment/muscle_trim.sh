@@ -3,8 +3,9 @@
 OGID="MOG0001047"
 N_CORES="1"
 
-FAAFILE="$OGID.faa"
+FAAFILE="alignments_and_initial_trees/$OGID.faa"
 MSAFILE="${FAAFILE}.msa"
+
 if [[ ! -s $MSAFILE ]]
 then
 	SEQ_COUNT=$(grep -c '^>' "$FAAFILE")

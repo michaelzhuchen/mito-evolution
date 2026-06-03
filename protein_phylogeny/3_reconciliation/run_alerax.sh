@@ -2,7 +2,7 @@
 
 families_file_template="families_template_pruned.ufboot.rooted.txt"
 species_tree="data/species_phylogeny/processed_species_tree/species_tree_1.nwk"
-base_output_directory="zenodo_directory/reconciled_trees_species.tree.1"
+base_output_directory="reconciled_trees_species.tree.1"
 parametrization_file="alerax_model_parameterization_Node34_Eukaryota.txt"
 fraction_missing_file="fraction_missing_euk203spp_prokgroups_alerax.txt"
 

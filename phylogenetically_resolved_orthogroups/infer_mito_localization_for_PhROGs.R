@@ -4,14 +4,13 @@ suppressMessages(library(ape))
 suppressMessages(library(castor))
 suppressMessages(library(phytools))
 
-# Get arguments from command line
-args <- commandArgs(trailingOnly=TRUE)
-phrog_base_dir <- args[1]
-consensus50_blopt_tree_dir <- args[2]
-alerax_dir <- args[3]
-out_dir <- args[4]
-OG_id <- args[5]
-selected_tax_levels_file <- args[6]
+# Get arguments
+dataset_name <- "species_tree_1"
+phrog_base_dir <- here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long")
+consensus50_blopt_tree_dir <- here("reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.1")
+alerax_dir <- here("reconciled_trees_species.tree.1")
+out_dir <- here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long")
+OG_id <- "MOG0001047"
 bool_verbose <- FALSE
 
 
@@ -20,12 +19,12 @@ bool_verbose <- FALSE
 set.seed(42)
 
 # Focal taxonomic levels for which to generate PhROGs
-selected_tax_levels <- read.table(here("data/phylogenetically_resolved_orthogroups", "selected_tax_levels_for_phrogs_wholeproteome.txt"), header=FALSE)$V1
+selected_tax_levels <- read.table(here("data/phylogenetically_resolved_orthogroups", paste0(dataset_name, "_tax_levels_for_phrogs_wholeproteome.txt")), header=FALSE)$V1
 
 # Core species taxids
 completed_mitoproteomes_species_list <- c("9606", "559292", "3702", "1257118", "5689", "185431", "5741", "32595")
 
-consensus50_bl_opt_tree_filename <- here("reconciled_consensus_trees_with_supports", paste0(OG_id, "_consensus50_blopt.treefile"))
+consensus50_bl_opt_tree_filename <- here(consensus50_blopt_tree_dir, paste0(OG_id, "_consensus50_blopt.treefile"))
 if (!file.exists(consensus50_bl_opt_tree_filename)) {
   print(paste0("Tree file not found: ", consensus50_bl_opt_tree_filename))
   quit(save="no")
@@ -34,9 +33,9 @@ if (!file.exists(consensus50_bl_opt_tree_filename)) {
 }
 
 # Read in Eukaryota parent PhROGs for the current OG
-parent_progs_long_raw <- read.table(here("data/phylogenetically_resolved_orthogroups", "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
+parent_progs_long_raw <- read.table(here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(parent_progs_long_raw) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
-phrogs_long_eukaryota_parent <- parent_progs_long_raw %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(OG_id == OG_id) %>% filter(!duplicated(protein_id))
+phrogs_long_eukaryota_parent <- parent_progs_long_raw %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(OG_id == OG_id) %>% filter(!duplicated(protein_id))
 
 # Read in Lta mapping for Lta2019 to Ltaref
 lta_mapping <- read.delim(here("data/orthogroups/idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
@@ -71,10 +70,10 @@ if (length(lta2019_protein_ids) > 0) {
 
 ### Determine ancestral localizations
 # Read in experimental and mtDNA mito proteins
-gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_2025.09.30.tsv"), sep="\t", header=TRUE)
+gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_2026.04.05.tsv"), sep="\t", header=TRUE)
 
 # Read in deeploc predictions
-deeploc_results <- read.table(file.path(supplemental_data_directory, "TableS7_retrained_DeepLoc_predictions.tsv"), header=TRUE)
+deeploc_results <- read.table(here("data/deeploc/predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
 colnames(deeploc_results) <- c("Protein_ID", "Mitochondrion")
 
 # Read in organelle-encoded proteins
@@ -340,11 +339,11 @@ for (i in 1:length(selected_tax_levels)) {
     print(paste0(selected_tax_level, ": ", i, " of ", length(selected_tax_levels)))
   }
   
-  curr_out_dir <- paste0(out_dir, "/", selected_tax_level)
+  curr_out_dir <- file.path(out_dir, selected_tax_level)
   dir.create(curr_out_dir, showWarnings = FALSE)
-  outfilename <- paste0(curr_out_dir, "/", OG_id, "_", selected_tax_level, "_PhROGs_long.tsv")
+  outfilename <- file.path(curr_out_dir, paste0(OG_id, "_", selected_tax_level, "_PhROGs_long.tsv"))
   
-  phrogs_long_filename <- paste0(phrog_base_dir, "/", selected_tax_level, "/", OG_id, "_", selected_tax_level, "_PhROGs_long.tsv")
+  phrogs_long_filename <- file.path(phrog_base_dir, selected_tax_level, paste0(OG_id, "_", selected_tax_level, "_PhROGs_long.tsv"))
   if (!file.exists(phrogs_long_filename)) {
     next
   } else if (file.size(phrogs_long_filename) == 0) {
@@ -356,11 +355,9 @@ for (i in 1:length(selected_tax_levels)) {
     colnames(phrogs_long_original) <- c("PROG_id", "protein_id", "label", "mito_localization_prob", "BOOL_NONVERTICAL", "BOOL_primary_OG")
     phrogs_long_original$mito_localization_prob_mk <- NA
     phrogs_long_original$mito_localization_prob_parsimony <- NA
-    
-    phrogs_long <- phrogs_long_original %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) #%>% filter(!duplicated(protein_id))
   }
   
-  PhROG_ids <- unique(phrogs_long$PROG_id)
+  PhROG_ids <- unique(phrogs_long_original$PROG_id)
   for (i in 1:length(PhROG_ids)) {
     PhROG_id_curr <- PhROG_ids[i]
     
@@ -368,7 +365,7 @@ for (i in 1:length(selected_tax_levels)) {
       print(paste0(PhROG_id_curr, ": ", i, " of ", length(PhROG_ids)))
     }
     
-    phrogs_long_curr <- phrogs_long %>% filter(PROG_id == PhROG_id_curr)
+    phrogs_long_curr <- phrogs_long_original %>% filter(PROG_id == PhROG_id_curr)
     
     matched_tree_index <- c()
     for (i in 1:length(trees_parent_phrogs_mk)) {
@@ -402,7 +399,7 @@ for (i in 1:length(selected_tax_levels)) {
     }
   }
   
-  # # Write out
-  # write.table(phrogs_long_original, outfilename, sep="\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+  ## Write out
+  write.table(phrogs_long_original, outfilename, sep="\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
   
 }

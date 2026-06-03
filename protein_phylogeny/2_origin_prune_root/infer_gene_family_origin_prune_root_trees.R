@@ -6,11 +6,10 @@ suppressMessages(library(ape))
 suppressMessages(library(castor))
 suppressMessages(library(stringr))
 
-# Get arguments from command line
-args <- commandArgs(trailingOnly=TRUE)
-base_dir <- args[1]
-out_dir <- args[2]
-MSA_id <- args[3]
+# Get arguments
+base_dir <- here("alignments_and_initial_trees")
+out_dir <- here("pruned_rooted_trees")
+MSA_id <- "MOG0001047.faa_clipkit.gappy.msa"
 bool_verbose <- FALSE
 
 # Set random seed
@@ -86,7 +85,7 @@ if (length(rename_mtDNA_proteins) > 0) {
 
 
 # Read in species tree
-species_tree <- here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree")
+species_tree <- here("data/species_phylogeny/processed_species_tree", "species_tree_1.nwk")
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
 
 # Read in uniprot tax data
@@ -94,7 +93,7 @@ uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota
 uniprot_proteomes_euk_taxids <- uniprot_proteomes_tax$TaxId[uniprot_proteomes_tax$domain == "Eukaryota"]
 
 # Read in uniprot all species tax data
-uniprot_proteomes_all_tax <- read.table(here("data/taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_all_tax <- read.delim(here("data/taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 bacteria_taxids <- uniprot_proteomes_all_tax$TaxId[which(uniprot_proteomes_all_tax$domain == "Bacteria")]
 archaea_taxids <- uniprot_proteomes_all_tax$TaxId[which(uniprot_proteomes_all_tax$domain == "Archaea")]
 n_bacteria_species <- length(bacteria_taxids)
@@ -608,5 +607,5 @@ if (length(ufboot_rooted_trees) < n_ufboot_trees) {
 
 
 ## Write out
-# write.table(LCA_df, here("data/protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
+# write.table(LCA_df, here("data/protein_phylogeny", paste0("orthogroup_origin_domain_", MSA_id, ".tsv")), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
 

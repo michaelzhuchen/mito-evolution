@@ -69,7 +69,7 @@ prok_origin_OG_ids <- origin_table$OG_id[origin_table$origin_domain == "Prokaryo
 prokaryote_mmseqs2_clusters_taxids <- read.table(here("data/downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
 
 # Read in experimental and mtDNA mito proteins
-gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_2025.09.30.tsv"), sep="\t", header=TRUE)
+gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_2026.04.05.tsv"), sep="\t", header=TRUE)
 
 ### Screen for enrichment
 ogs_long_prok <- ogs_long %>% filter(Orthogroup %in% prok_origin_OG_ids) %>% filter(taxid %in% uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain != "Eukaryota"])
@@ -88,9 +88,9 @@ prokaryote_phenotypes_total <- uniprot_proteomes_all_tax_GOLD_bacdive_prok %>% f
 ogs_long_prok_summary_phenotypes <- ogs_long_prok_summary_phenotypes %>% rowwise() %>% mutate(prop_aerobe = n_aerobe / prokaryote_phenotypes_total$n_aerobe_total, prop_anaerobe = n_anaerobe / prokaryote_phenotypes_total$n_anaerobe_total, prop_facultative = n_facultative / prokaryote_phenotypes_total$n_facultative_total, prop_gram_negative = n_gram_negative / prokaryote_phenotypes_total$n_gram_negative_total, prop_gram_positive = n_gram_positive / prokaryote_phenotypes_total$n_gram_positive_total)
 
 # Filter for LECA mito
-leca_PhROG_OG_ids <- read.table(here("data/reconstruction", 'leca_PhROG_OG_ids_corespecies_deeplocmc.min5spp_Eukaryota.parent.2supergroups.min4spp.filter.txt'))$V1
+leca_PhROG_OG_ids <- read.table(here("data/reconstruction", "species_tree_1", "leca_PhROG_OG_ids.txt"))$V1
 LECA_OG_ids <- unique(gsub("_.*", "", leca_PhROG_OG_ids))
-leca_mito_PhROG_ids <- read.table(here("data/reconstruction", 'leca_mito_PhROG_ids_corespecies_deeplocmc.min5spp_Eukaryota.parent.2supergroups.min4spp.filter.txt'))$V1
+leca_mito_PhROG_ids <- read.table(here("data/reconstruction", "species_tree_1", "leca_mito_PhROG_ids.txt"))$V1
 LECA_mito_OG_ids <- unique(gsub("_.*", "", leca_mito_PhROG_ids))
 ogs_long_prok_summary_phenotypes <- ogs_long_prok_summary_phenotypes %>% mutate(in_LECA = Orthogroup %in% LECA_OG_ids, in_LECA_mito = Orthogroup %in% LECA_mito_OG_ids)
 ogs_long_prok_summary_phenotypes <- ogs_long_prok_summary_phenotypes %>% filter(in_LECA_mito)
@@ -105,5 +105,5 @@ ogs_long_prok_summary_phenotypes <- ogs_long_prok_summary_phenotypes[order(ogs_l
 ogs_long_prok_summary_phenotypes$Rank <- 1:nrow(ogs_long_prok_summary_phenotypes)
 
 ## Write out
-# write.table(ogs_long_prok_summary_phenotypes, 'anaerobic_prokaryote_enrichment_screen_LECA_mito_OGs_bacdive.GOLD.tsv', sep="\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(ogs_long_prok_summary_phenotypes, here("data/prokaryote_phenotype", "prokaryote_phenotypes_LECA_mito_OGs.tsv"), sep="\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
