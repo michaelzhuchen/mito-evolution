@@ -67,8 +67,8 @@ colnames(phrogs_long_eukaryota_parent) <- c("OG_id", "PROG_id", "label", "mito_l
 phrogs_long_eukaryota_parent <- phrogs_long_eukaryota_parent %>% filter(BOOL_primary_OG) %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% ungroup() %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
 
 # Read in Eukaryota_child PhROGs
-progs_long <- read.table(file.path("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", paste0("PhROGs_at_Node34_Eukaryota_long.tsv")), sep="\t", header=TRUE)
-colnames(progs_long) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
+phrogs_long_eukaryota <- read.table(file.path("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", paste0("PhROGs_at_Node34_Eukaryota_long.tsv")), sep="\t", header=TRUE)
+colnames(phrogs_long_eukaryota) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
 phrogs_long_eukaryota <- phrogs_long_eukaryota %>% filter(BOOL_primary_OG) %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% ungroup() %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
 
 ## Get reconstructed LECA whole proteome PhROGs/OGs
@@ -204,7 +204,6 @@ bl_df <- bl_df %>% mutate(is_MitoCarta = child_PhROG_id %in% leca_mito_PhROG_ids
 bl_df <- bl_df %>% mutate(neglog10_normalized_stem_bl = -log10(normalized_stem_bl), neglog10_normalized_duplication_bl = -log10(normalized_duplication_bl), neglog10_normalized_oldest_duplication_bl = -log10(normalized_oldest_duplication_bl))
 
 
-
 ### Ridgeline plots
 
 ## Stem length by GO cellular compartment
@@ -301,7 +300,7 @@ bl_combined_mitopathway_labeled$mitopathway_type <- "Human_MitoPathway"
 bl_combined_mitopathway_missing$mitopathway_type <- "Imputed_MitoPathway"
 bl_combined_mitopathway <- rbind(bl_combined_mitopathway_labeled, bl_combined_mitopathway_missing)
 
-bl_combined_mitopathway <- bl_combined_mitopathway %>% filter(!is.na(MitoPathway)) %>% group_by(parent_PhROG_id, child_PhROG_id, MitoPathway, type, neglog10_normalized_branch_length) %>% summarize(Gene = paste0(sort(unique(Gene)), collapse=", ")) %>% ungroup()
+bl_combined_mitopathway <- bl_combined_mitopathway %>% filter(!is.na(MitoPathway)) %>% group_by(parent_PhROG_id, child_PhROG_id, MitoPathway, neglog10_normalized_branch_length) %>% summarize(Gene = paste0(sort(unique(Gene)), collapse=", ")) %>% ungroup()
 
 # Add oxygen phenotype
 ogs_long_prok_summary_phenotypes <- read.table(here("data/prokaryote_phenotype", "prokaryote_phenotypes_LECA_mito_OGs.tsv"), sep="\t", header=TRUE)
@@ -342,6 +341,112 @@ pairwise.wilcox.test(bl_combined_mitopathway_select$neglog10_normalized_branch_l
 #     color = "black" 
 #   ) + xlim(-1,3)
 # dev.off()
+
+
+
+## Compare endosymbiont-derived mito proteins with others
+bl_stem <- bl_df %>% filter(!is.na(neglog10_normalized_stem_bl) & !is.infinite(neglog10_normalized_stem_bl))
+bl_stem <- bl_stem %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl)
+bl_combined <- bl_stem %>% select(OG_id, parent_PhROG_id, child_PhROG_id, is_MitoCarta, neglog10_normalized_branch_length, median_euk_clade_bl, stem_bl)
+bl_combined$type <- ""
+
+# Add prokaryotic donors
+combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long_reduce <- combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long[,c("PhROG_id", "taxon")]
+colnames(combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long_reduce)[2] <- "prokaryotic_donor"
+bl_stem_hgt <- merge(bl_stem, combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long_reduce, by.x="parent_PhROG_id", by.y="PhROG_id")
+other_bacteria_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Bacteria"]
+other_bacteria_ids <- other_bacteria_ids[other_bacteria_ids != "Alphaproteobacteria"]
+other_archaea_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Archaea"]
+other_archaea_ids <- other_archaea_ids[other_archaea_ids != "Asgardgroup"]
+bl_stem_asgard <- bl_stem_hgt %>% filter(prokaryotic_donor == "Asgardgroup") %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl, stem_duplication_bl = stem_bl, type = "Asgardgroup") %>% select(colnames(bl_combined))
+bl_stem_alpha <- bl_stem_hgt %>% filter(prokaryotic_donor == "Alphaproteobacteria") %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl, stem_duplication_bl = stem_bl, type = "Alphaproteobacteria") %>% select(colnames(bl_combined))
+bl_stem_alpha_mito <- bl_stem_hgt %>% filter(is_MitoCarta) %>% filter(prokaryotic_donor == "Alphaproteobacteria") %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl, stem_duplication_bl = stem_bl, type = "mitochondrion (endosymbiont)") %>% select(colnames(bl_combined))
+bl_stem_otherbacteria <- bl_stem_hgt %>% filter(prokaryotic_donor %in% other_bacteria_ids) %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl, stem_duplication_bl = stem_bl, type = "Other bacteria") %>% select(colnames(bl_combined))
+bl_stem_otherarchaea <- bl_stem_hgt %>% filter(prokaryotic_donor %in% other_archaea_ids) %>% mutate(neglog10_normalized_branch_length = neglog10_normalized_stem_bl, stem_duplication_bl = stem_bl, type = "Other archaea") %>% select(colnames(bl_combined))
+bl_combined <- rbind(bl_combined, bl_stem_asgard, bl_stem_alpha, bl_stem_alpha_mito, bl_stem_otherbacteria, bl_stem_otherarchaea)
+
+# Add mtDNA-encoded endosymbiont proteins
+bl_stem_allmtdna <- merge(bl_stem, phrogs_long_eukaryota_leca, by.x=c("OG_id", "child_PhROG_id"), by.y=c("OG_id", "PROG_id"))
+all_mtdna_accessions <- read.table(here("data/deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
+bl_stem_allmtdna <- bl_stem_allmtdna %>% filter(is_MitoCarta) %>% filter(protein_id %in% all_mtdna_accessions)
+bl_stem_allmtdna$type <- "mitochondrion (endosymbiont)"
+bl_stem_allmtdna$Gene <- bl_stem_allmtdna$protein_id
+bl_stem_allmtdna$stem_duplication_bl <- bl_stem_allmtdna$stem_bl
+bl_stem_allmtdna$neglog10_normalized_branch_length <- bl_stem_allmtdna$neglog10_normalized_stem_bl
+bl_stem_allmtdna <- bl_stem_allmtdna %>% filter(!child_PhROG_id %in% bl_stem_alpha_mito$child_PhROG_id)
+bl_stem_allmtdna <- bl_stem_allmtdna %>% group_by(OG_id, parent_PhROG_id, child_PhROG_id, type, is_MitoCarta, neglog10_normalized_branch_length, median_euk_clade_bl, stem_bl, sd_euk_clade_bl, oldest_duplication_bl, stem_duplication_bl) %>% summarize(Gene = paste0(sort(unique(Gene)), collapse=", ")) %>% ungroup()
+bl_stem_allmtdna <- bl_stem_allmtdna %>% select(colnames(bl_combined))
+bl_combined <- rbind(bl_combined, bl_stem_allmtdna[,colnames(bl_stem_allmtdna) %in% colnames(bl_combined)])
+
+# Add all mitochondrial proteins
+bl_stem_mito <- bl_stem %>% filter(is_MitoCarta)
+bl_stem_mito$type <- "mitochondrion"
+bl_stem_mito$stem_duplication_bl <- bl_stem_mito$stem_bl
+bl_stem_mito$neglog10_normalized_branch_length <- bl_stem_mito$neglog10_normalized_stem_bl
+bl_combined <- rbind(bl_combined, bl_stem_mito[,colnames(bl_stem_mito) %in% colnames(bl_combined)])
+
+# Add non-mitochondrial proteins
+bl_stem_nonmito <- bl_stem %>% filter(!is_MitoCarta)
+bl_stem_nonmito$type <- "non-mitochondrial"
+bl_stem_nonmito$stem_duplication_bl <- bl_stem_nonmito$stem_bl
+bl_stem_nonmito$neglog10_normalized_branch_length <- bl_stem_nonmito$neglog10_normalized_stem_bl
+bl_combined <- rbind(bl_combined, bl_stem_nonmito[,colnames(bl_stem_nonmito) %in% colnames(bl_combined)])
+
+selected_types <- c("Asgardgroup", "non-mitochondrial", "Alphaproteobacteria", "mitochondrion (endosymbiont)", "mitochondrion")
+bl_combined <- bl_combined %>% filter(type %in% selected_types)
+temp_median <- bl_combined %>% group_by(type) %>% summarize(median = median(neglog10_normalized_branch_length))
+temp_median <- temp_median[order(temp_median$median, decreasing=TRUE),]
+bl_combined$type <- factor(bl_combined$type, levels = c(temp_median$type))
+temp_count <- bl_combined %>% group_by(type) %>% summarize(n = n())
+
+# All-vs-all pairwise Wilcoxon rank-sum test, BH correction
+pairwise.wilcox.test(bl_combined$neglog10_normalized_branch_length, bl_combined$type, p.adjust.method = "BH", exact = FALSE)
+
+# pdf(paste0('compare_normalized_stem_length_endosymbiont.pdf'), height = 6, width = 6)
+# ggplot(data = bl_combined, aes(x = neglog10_normalized_branch_length, y = type, fill = type)) +
+#   geom_density_ridges(alpha=0.75, scale=0.7) +
+#   theme_ridges() +
+#   theme(legend.position = "none") +
+#   geom_text(
+#     data = temp_count,
+#     aes(x = Inf, label = n),
+#     hjust = 1, # Align text to the right
+#     nudge_y = 0.25, # Move the labels slightly above the ridgeline
+#     size = 2,
+#     color = "black") +
+#   xlim(-1,3)
+# dev.off()
+
+# pdf(paste0('compare_stem_bl_endosymbiont.pdf'), height = 6, width = 6)
+# ggplot(data = bl_combined, aes(x = stem_bl, y = type, fill = type)) +
+#   geom_density_ridges(alpha=0.75) +
+#   theme_ridges() +
+#   theme(legend.position = "none") +
+#   geom_text(
+#     data = temp_count,
+#     aes(x = -1, label = n),
+#     hjust = 1, # Align text to the right
+#     nudge_y = 0.25, # Move the labels slightly above the ridgeline
+#     size = 2,
+#     color = "black") +
+#   scale_x_reverse() + xlim(4,-1) 
+# dev.off()
+
+# pdf(paste0('compare_median_euk_clade_bl_endosymbiont.pdf'), height = 6, width = 6)
+# ggplot(data = bl_combined, aes(x = median_euk_clade_bl, y = type, fill = type)) +
+#   geom_density_ridges(alpha=0.75, scale = 0.7) +
+#   theme_ridges() +
+#   theme(legend.position = "none") +
+#   geom_text(
+#     data = temp_count,
+#     aes(x = Inf, label = n),
+#     hjust = 1, # Align text to the right
+#     nudge_y = 0.25, # Move the labels slightly above the ridgeline
+#     size = 2,
+#     color = "black") +
+#   xlim(0,8)
+# dev.off()
+
 
 
 ### Archaeplastida branch length timings
