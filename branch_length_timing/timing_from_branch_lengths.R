@@ -27,7 +27,7 @@ gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_p
 human_id2training <- read.table(here("data/orthogroups/idmapping", "human.id2training_uniprot_symbols.txt"), sep="\t", header=TRUE)
 human_id2training <- human_id2training[order(human_id2training$Symbol),]
 # Read in human MitoPathways
-mitopathways <- read.table(here("data/mito_orthogroups", "human.path2gene.txt"), sep="\t", header=TRUE)
+mitopathways <- read.table(here("data", "annotation", "human_mitocarta", "human.path2gene.txt"), sep="\t", header=TRUE)
 mitopathways_human_id2training <- merge(mitopathways, human_id2training, by.x="Gene", by.y="Symbol")
 mitopathways_human_id2training$gene_accession <- paste0("9606_", mitopathways_human_id2training$Entry)
 
