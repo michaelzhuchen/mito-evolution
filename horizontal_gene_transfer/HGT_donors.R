@@ -6,27 +6,28 @@ library(ape)
 library(castor)
 library(phytools)
 
+## Select dataset
+dataset_name <- "species_tree_1"
 
 ## Select focal taxonomic level
 selected_tax_level <- "Node34_Eukaryota" # LECA
 # selected_tax_level <- "Node39_Archaeplastida" # Plastid control
 
-
 ## Read in data
 # Read in taxonomic data
-uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
-uniprot_proteomes_all_tax <- read.table(here("data/taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_tax <- read.table(here("data", "taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_all_tax <- read.delim(here("data", "taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 
 # Read in Eukaryota parent PhROGs
-parent_progs_long <- read.table(here("data/phylogenetically_resolved_orthogroups", "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
+parent_progs_long <- read.table(here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(parent_progs_long) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
 parent_progs_long <- parent_progs_long %>% mutate(OG_id = gsub("_.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
 
 # Get mito Eukaryota_parent PhROGs
-parent_progs_long_mito_PhROG_ids <- read.table(here("data/reconstruction", "parent_mito_PhROG_ids_corespecies_deeplocmc.min5spp_Eukaryota.parent.2supergroups.min4spp.filter.txt"))$V1
+parent_progs_long_mito_PhROG_ids <- read.table(here("data", "reconstruction", dataset_name, "parent_mito_PhROG_ids.txt"))$V1
 
 # Read in HGT PhROGs
-combined_hgt_phrog_raw <- read.table(here("data/horizontal_gene_transfer", "posterior_clades_HGT_Node34_Eukaryota_parent_wide.tsv"), sep="\t")
+combined_hgt_phrog_raw <- read.table(here("data", "horizontal_gene_transfer", dataset_name, "posterior_clades_HGT_Node34_Eukaryota_parent_wide.tsv"), sep="\t")
 colnames(combined_hgt_phrog_raw) <- c("OG_id","label","clade_index","distance_to_root","reference_protein_ids","count","species_overlap","duplications_rec","nonvertical_protein_ids","n_species","n_reference_proteins","fraction_euk_species","mito_localization_prob","PhROG_id","fraction_primary_OG_for_vertical_proteins","self_clade_protein_ids","sister_clade_protein_ids","cousin_clade_protein_ids","grandma_clade_protein_ids","self_clade_prok_species_in_clades","self_clade_n_prok_species","self_clade_n_euk_species","self_clade_fraction_euk_species","sister_clade_prok_species_in_clades","sister_clade_n_prok_species","sister_clade_n_euk_species","sister_clade_fraction_euk_species","cousin_clade_prok_species_in_clades","cousin_clade_n_prok_species","cousin_clade_n_euk_species","cousin_clade_fraction_euk_species","grandma_clade_prok_species_in_clades","grandma_clade_n_prok_species","grandma_clade_n_euk_species","grandma_clade_fraction_euk_species","HGT_self", "HGT_sister","HGT_cousin")
 
 # Convert NAs to empty string to avoid errors
@@ -91,7 +92,7 @@ prok_origin_OG_ids <- origin_table$OG_id[origin_table$origin_domain == "Prokaryo
 combined_hgt_phrog_prok_origin <- combined_hgt_phrog %>% filter(OG_id %in% prok_origin_OG_ids)
 
 # Get PhROGs at/above the selected taxonomic level
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_constrained.ncbi.tree.manual.changes.v7_prokspp.collapsed_nodelabels_rooted_downsample_v2.contree"))
+species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk")))
 species_tree_subtree <- get_subtree_at_node(species_tree, selected_tax_level)$subtree
 species_tree_euks_subtree <- get_subtree_at_node(species_tree, "Node34_Eukaryota")$subtree
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
