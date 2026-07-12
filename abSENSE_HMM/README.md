@@ -9,9 +9,9 @@ This folder contains scripts used to perform abSENSE-HMM analysis. The analysis 
 1. **Install dependencies**  
    Install required packages and environments.
 
-   ```R (>= v4.1)```: https://cran.r-project.org/
+   ```R (version >= 4.1)```: https://cran.r-project.org/
 
-   ```HMMER (>= v3.3.2)```: http://hmmer.org/documentation.html. Ensure that HMMER executables are in your path.
+   ```HMMER (version >= 3.3.2)```: http://hmmer.org/documentation.html. Ensure that HMMER executables are in your path.
 
    Install R packages within your R environment:
    ```R
