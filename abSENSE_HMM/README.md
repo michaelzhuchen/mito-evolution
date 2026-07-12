@@ -1,4 +1,4 @@
-# mito_evolution
+# abSENSE_HMM
 
 ## Overview
 
@@ -8,10 +8,12 @@ This folder contains scripts used to perform abSENSE-HMM analysis. The analysis 
 ### Typical workflow
 1. **Install dependencies**  
    Install required packages and environments.
-   ```R (v4.3.1)```: https://cran.r-project.org/
-   ```HMMER (v3.3.2)```: http://hmmer.org/documentation.html. Ensure that HMMER executables are in your path.
 
-   Install R packages within the R environment:
+   ```R (>= v4.1)```: https://cran.r-project.org/
+
+   ```HMMER (>= v3.3.2)```: http://hmmer.org/documentation.html. Ensure that HMMER executables are in your path.
+
+   Install R packages within your R environment:
    ```R
    install.packages(tidyverse)
    install.packages(Biostrings)
