@@ -1,3 +1,4 @@
+suppressMessages(library(here))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ape))
 suppressMessages(library(castor))
@@ -46,9 +47,9 @@ hmmsearch_out_raw$OG_id <- gsub("_LOO.*", "", hmmsearch_out_raw$V4)
 hmmsearch_out_raw <- hmmsearch_out_raw[order(hmmsearch_out_raw$bitscore, decreasing=TRUE),]
 
 # Read in taxonomic data
-uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_tax <- read.table(here("data", "taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", dataset_name, "species_tree_1.nwk"))
+species_tree <- read.tree(here("data", "species_phylogeny", "processed_species_tree", paste0(dataset_name, ".nwk")))
 species_tree_prok <- drop.tip(species_tree, uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Eukaryota"])
 species_tree_prok_labels <- c(species_tree_prok$tip.label, species_tree_prok$node.label)
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
@@ -313,22 +314,22 @@ for (curr_index in 1:length(query_OG_list)) {
 }
 
 # ## Write out
-# write.table(homology_power_agg, paste0(outdir, "/results/", OG_id, "_homology_power_result.tsv"), sep="\t", row.names = FALSE, col.names = FALSE, quote=FALSE)
-# write.table(homology_power_per_species, paste0(outdir, "/results_per_species/", OG_id, "_homology_power_per_species.tsv"), sep="\t", row.names = FALSE, col.names = FALSE, quote=FALSE)
-# 
-# ## Plot power per OG
-# plot_filename <- paste0(outdir, "/figures/", query_OG)
-# 
-# # Add lineage information
-# hmmsearch_out$Lineage <- uniprot_proteomes_tax$superfamily[match(hmmsearch_out$tree_id, uniprot_proteomes_tax$tree_id)]
-# 
-# pdf(paste0(plot_filename, ".pdf"), width=8, height=6)
-# p <- ggplot(data=hmmsearch_out, aes(x=distance_metric, y=bitscore, color=Lineage)) + geom_point(alpha=0.5) + geom_ribbon(data = predicted, aes(x=x, y=y, ymin=y_lower_99_prediction_interval, ymax=y_upper_99_prediction_interval), colour="#45b6fe", fill="lightblue", alpha=0.5) + geom_line(data = predicted, aes(x = x, y = y), color = "red", linewidth = 1) + geom_hline(aes(yintercept = bitscore_at_expect_threshold), linetype="dashed")
-# p <- p + scale_x_continuous(
-#   breaks = species_distance_df_select$distance_metric,
-#   labels = paste0(gsub(" .*", "", species_distance_df_select$species_name), " (", round(species_distance_df_select$distance_metric,1), ")"),
-# ) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, color=species_distance_df_select$OG_member_color)) + xlab("Weighted evolutionary distance (substitutions/site)") + ylab("HMM score") #+ ylim(min(c(0,predicted$y_lower_99_prediction_interval)),max(predicted$y_upper_99_prediction_interval))
-# p + ggtitle(label = paste0(query_OG, ": L=", round(L,1), ", R=", round(R,2)), subtitle=paste0("Fraction of detectable outgroup kingdoms = ", round(fraction_of_detectable_outgroup_kingdoms,2), ", R^2 = ", round(r_squared,2)))
-# dev.off()
+write.table(homology_power_agg, paste0(outdir, "/results/", OG_id, "_homology_power_result.tsv"), sep="\t", row.names = FALSE, col.names = FALSE, quote=FALSE)
+write.table(homology_power_per_species, paste0(outdir, "/results_per_species/", OG_id, "_homology_power_per_species.tsv"), sep="\t", row.names = FALSE, col.names = FALSE, quote=FALSE)
+
+## Plot power per OG
+plot_filename <- paste0(outdir, "/figures/", query_OG, ".pdf")
+
+# Add lineage information
+hmmsearch_out$Lineage <- uniprot_proteomes_tax$superfamily[match(hmmsearch_out$tree_id, uniprot_proteomes_tax$tree_id)]
+
+pdf(plot_filename, width=8, height=6)
+p <- ggplot(data=hmmsearch_out, aes(x=distance_metric, y=bitscore, color=Lineage)) + geom_point(alpha=0.5) + geom_ribbon(data = predicted, aes(x=x, y=y, ymin=y_lower_99_prediction_interval, ymax=y_upper_99_prediction_interval), colour="#45b6fe", fill="lightblue", alpha=0.5) + geom_line(data = predicted, aes(x = x, y = y), color = "red", linewidth = 1) + geom_hline(aes(yintercept = bitscore_at_expect_threshold), linetype="dashed")
+p <- p + scale_x_continuous(
+  breaks = species_distance_df_select$distance_metric,
+  labels = paste0(gsub(" .*", "", species_distance_df_select$species_name), " (", round(species_distance_df_select$distance_metric,1), ")"),
+) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, color=species_distance_df_select$OG_member_color)) + xlab("Weighted evolutionary distance (substitutions/site)") + ylab("HMM score") #+ ylim(min(c(0,predicted$y_lower_99_prediction_interval)),max(predicted$y_upper_99_prediction_interval))
+p + ggtitle(label = paste0(query_OG, ": L=", round(L,1), ", R=", round(R,2)), subtitle=paste0("Fraction of detectable outgroup kingdoms = ", round(fraction_of_detectable_outgroup_kingdoms,2), ", R^2 = ", round(r_squared,2)))
+dev.off()
 
 

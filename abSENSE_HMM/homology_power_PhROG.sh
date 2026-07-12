@@ -1,13 +1,12 @@
 #!/bin/sh
 
 DATASETNAME="species_tree_1"
-ALERAX_DIR="reconciled_trees_species.tree.1"
-POSTERIOR_CLADES_DIR="reconciled_trees_posterior_clades_species.tree.1"
-HMM_LOO_RESULTS_PREFIX="data/abSENSE_HMM/$DATASETNAME"
-SPECIES_TREE_FILENAME="data/species_phylogeny/processed_species_tree/${DATASETNAME}.nwk"
-OUTDIR="data/abSENSE_HMM/$DATASETNAME"
+ALERAX_DIR="../reconciled_trees_species.tree.1"
+POSTERIOR_CLADES_DIR="../reconciled_trees_posterior_clades_species.tree.1"
+HMM_LOO_RESULTS_PREFIX="output_directory/$DATASETNAME"
+OUTDIR="output_directory/$DATASETNAME"
 
-OGID="MOG0001047"
+OGID=$1
 
 mkdir -p $OUTDIR
 mkdir -p $OUTDIR/results
@@ -19,5 +18,4 @@ for LOO_HMMSEARCH_FILENAME in $HMM_LOO_RESULTS_PREFIX/results/hmmsearch_out/${OG
     PHROGID=${LOO_HMMSEARCH_FILENAME%_LOO_hmmsearch.out}
     PHROGID=${PHROGID##*/}
     Rscript run_absense.R $PHROGID $HMM_LOO_RESULTS_PREFIX $ALERAX_DIR $POSTERIOR_CLADES_DIR $OUTDIR $DATASETNAME
-  done
 done;

@@ -1,13 +1,13 @@
 #!/bin/sh
 
-BASEDIR="alignments_and_initial_trees"
+BASEDIR="../alignments_and_initial_trees"
 DATASETNAME="species_tree_1"
-OUTDIR="output_directory"
+OUTDIR="$DATASETNAME"
 TEMPOUTDIR="tmp"
 DBSIZE="379668"
 EXPECT_THRESHOLD="10"
 
-OGID="MOG0001047"
+OGID=$1
 
 mkdir -p $OUTDIR/results
 mkdir -p $OUTDIR/results/hmmsearch_out

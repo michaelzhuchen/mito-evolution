@@ -1,3 +1,4 @@
+suppressMessages(library(here))
 suppressMessages(library(tidyverse))
 suppressMessages(library(Biostrings))
 
@@ -13,7 +14,7 @@ renamed_fasta <- original_fasta
 
 # Map lta2019 to ltaref
 # Read in Lta mapping for Lta2019 to Ltaref
-lta_mapping <- read.delim(here("data/orthogroups/idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
+lta_mapping <- read.delim(here("data", "orthogroups", "idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
 colnames(lta_mapping) <- c("ltaref_id", "lta2019_id")
 lta_mapping$ltaref_id <- paste0("5689_", lta_mapping$ltaref_id)
 lta_mapping$lta2019_id[lta_mapping$lta2019_id == ""] <- NA
