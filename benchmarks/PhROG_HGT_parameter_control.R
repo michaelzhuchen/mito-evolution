@@ -1,4 +1,4 @@
-
+library(here)
 library(tidyverse)
 library(ggplot2)
 library(ggrepel)
@@ -13,7 +13,7 @@ library(phytools)
 theme_set(theme_classic())
 
 # Read in species tree
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", paste0("species_tree_1.nwk")))
+species_tree <- read.tree(here("data", "species_phylogeny", "processed_species_tree", "species_tree_1.nwk"))
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
 archaeplastida_subtree <- get_subtree_at_node(species_tree, "Node39_Archaeplastida")$subtree
 archaeplastida_subtree_labels <- c(archaeplastida_subtree$tip.label, archaeplastida_subtree$node.label)

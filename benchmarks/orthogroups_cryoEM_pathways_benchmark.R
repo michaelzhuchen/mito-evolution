@@ -1,3 +1,4 @@
+library(here)
 library(tidyverse)
 library(ggplot2)
 library(reshape2)
@@ -132,14 +133,14 @@ idmapping_ath <- idmapping_ath %>% separate_rows(TAIR, sep = ";") %>% separate_r
 idmapping_ath$KEGG <- gsub("ath:", "", idmapping_ath$KEGG, fixed=TRUE)
 
 # Read in PhROGs
-phrogs_long <- read.table(here("data/phylogenetically_resolved_orthogroups", "species_tree_1", "PhROGs_long", "PhROGs_at_Node34_Eukaryota_long.tsv"), sep="\t", header=TRUE)
+phrogs_long <- read.table(here("data", "phylogenetically_resolved_orthogroups", "species_tree_1", "PhROGs_long", "PhROGs_at_Node34_Eukaryota_long.tsv"), sep="\t", header=TRUE)
 colnames(phrogs_long) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
 phrogs_long <- phrogs_long %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% ungroup()
 
 # Read in absense data
-homology_power_agg <- read.table(here("data/abSENSE_HMM", "species_tree_1", "absense_results.tsv"), sep="\t", header=TRUE)
+homology_power_agg <- read.table(here("data", "abSENSE_HMM", "species_tree_1", "absense_results.tsv"), sep="\t", header=TRUE)
 colnames(homology_power_agg) <- c("PhROG_id", "human_accessions", "L", "R", "OG_mrca_label", "OG_outgroup_mrca_label", "outgroup_kingdom_species", "fraction_of_detectable_outgroup_kingdoms", "probability_of_detection_in_any_outgroup_species", "hmm_length", "r_squared", "comments")
-homology_power_per_species <- read.table(here("data/abSENSE_HMM", "species_tree_1", "absense_results_per_species.tsv"), sep="\t", header=FALSE)
+homology_power_per_species <- read.table(here("data", "abSENSE_HMM", "species_tree_1", "absense_results_per_species.tsv"), sep="\t", header=FALSE)
 colnames(homology_power_per_species) <- c("PhROG_id", "taxid", "probability_of_detection")
 homology_power_agg <- homology_power_agg %>% rowwise() %>% mutate(OG_id = gsub("_.*", "", PhROG_id))
 homology_power_agg_seprows <- homology_power_agg %>% separate_rows(human_accessions, sep=",")

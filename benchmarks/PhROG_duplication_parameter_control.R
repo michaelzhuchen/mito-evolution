@@ -1,15 +1,16 @@
+suppressMessages(library(here))
+suppressMessages(library(tidyverse))
+suppressMessages(library(ggplot2))
+suppressMessages(library(ggrepel))
 
-library(tidyverse)
-library(ggplot2)
-
+# Set ggplot theme
 theme_set(theme_classic())
 
-## Select species overlap threshold
-suffix <- "species.overlap.0.0"
-# suffix <- "species.overlap.0.01"
-# suffix <- "species.overlap.0.1"
-# suffix <- "species.overlap.0.2"
-# suffix <- "species.overlap.0.3"
+# Get input arguments
+args <- commandArgs(trailingOnly = TRUE)
+suffix <- args[1]
+
+print(paste0("Analyzing ", suffix))
 
 # Read in Eukaryota parent and child PhROGs
 phrogs_long_eukaryota_parent <- read.table(here("data", "benchmarks", "phylogenetically_resolved_orthogroups", suffix, "Node34_Eukaryota_parent_PhROGs_long.tsv"), sep="\t", header=FALSE)
@@ -70,7 +71,7 @@ dev.off()
 
 ### OXPHOS negative control
 ## Map to human MitoPathways
-mitopathways <- read.table(here("data", "annotation", "pathways", "human.path2gene.txt"), sep="\t", header=TRUE)
+mitopathways <- read.table(here("data", "annotation", "human_mitocarta", "human.path2gene.txt"), sep="\t", header=TRUE)
 mitopathways_human_id2training <- merge(mitopathways, human_id2training, by.x="Gene", by.y="Symbol")
 mitopathways_human_id2training$gene_accession <- paste0("9606_", mitopathways_human_id2training$Entry)
 selected_mitopathways <- c("CI_subunits", "CII_subunits", "CIII_subunits", "CIV_subunits", "CV_subunits", "Mitochondrial_ribosome")
@@ -91,11 +92,13 @@ leca_oxphos_ogs_counts$label[leca_oxphos_ogs_counts$n_LECA_genes == 1] <- "Singl
 leca_oxphos_ogs_counts$label[leca_oxphos_ogs_counts$n_LECA_genes > 1] <- "Multi copy in LECA"
 leca_oxphos_ogs_counts <- leca_oxphos_ogs_counts %>% filter(label %in% c("Single copy in LECA", "Multi copy in LECA"))
 leca_oxphos_ogs_counts$pathway <- factor(leca_oxphos_ogs_counts$pathway, levels = rev(selected_mitopathways))
-pdf(paste0('barplot_oxphos_leca_copies_', suffix, '.pdf'), width = 6, height = 4)
+pdf(paste0("barplot_oxphos_leca_copies_", suffix, ".pdf"), width = 6, height = 4)
 ggplot(data = leca_oxphos_ogs_counts, aes(x = pathway, fill = label)) + geom_bar() + coord_flip() + scale_fill_manual(values = c("black", "gray"))
 dev.off()
 
+
 # Print stats
+print((paste0("Stats for ", suffix)))
 sum(kay_data_human_leca_counts$copies_label == "Multicopy in LECA") / nrow(kay_data_human_leca_counts)
 length(unique(kay_data_human_leca_counts$HMM.or.Reference.protein[kay_data_human_leca_counts$copies_label == "Multicopy in LECA"])) / length(unique(kay_data_human_leca_counts$HMM.or.Reference.protein))
 length(unique(leca_gene_counts$HMM.or.Reference.protein[leca_gene_counts$n_LECA_genes_chen == leca_gene_counts$n_LECA_genes_kay])) / length(unique(leca_gene_counts$HMM.or.Reference.protein))
@@ -106,7 +109,6 @@ length(unique(leca_oxphos_ogs_counts$OG_id[leca_oxphos_ogs_counts$label == "Sing
 
 ## Plot duplication stats across species overlap thresholds
 duplication_stats <- read.csv(here("data", "benchmarks", "phylogenetically_resolved_orthogroups", "duplication_control_stats.csv"))
-pdf(paste0('scatterplot_duplication_stats.pdf'), width = 4, height = 4)
+pdf("scatterplot_duplication_stats.pdf", width = 4, height = 4)
 ggplot(data = duplication_stats, aes(x = fraction.Kay.families.with.exactly.correct.copies.in.LECA, y = fraction.OXPHOS.single.copy.families.in.LECA, label = species.overlap.threshold)) + geom_point(size=4) + geom_text_repel(size=4) + xlim(0.6,1) + ylim(0.6,1) + xlab("Recall (fraction of duplicated LECA families with same copies as literature)") + ylab("Precision (fraction of OxPhos LECA families with single copy)") + coord_fixed(ratio = 1)
 dev.off()
-
