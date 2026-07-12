@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder contains scripts used to perform abSENSE-HMM analysis. The analysis takes as input the phylogenetically-resolved orthogroups from the Zenodo archive (```doi.org/10.5281/zenodo.20672825```).
+This folder contains scripts used to perform benchmark analysis.
 
 
 ### Typical workflow
