@@ -1,16 +1,20 @@
 # Load libraries
+library(here)
 library(tidyverse)
 library(ape)
 library(castor)
 library(phytools)
 
+# Get input arguments
+args <- commandArgs(trailingOnly = TRUE)
+dataset_name <- args[1]
+selected_tax_level <- args[2]
+selected_OG_id <- args[3]
+
 # Set parameters
-dataset_name <- "species_tree_1"
-base_dir <- here("reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.1")
-alerax_dir <- here("reconciled_trees_species.tree.1")
-out_dir <- here("data/branch_length_timing", dataset_name)
-selected_OG_id <- "MOG0001047"
-selected_tax_level <- "Node34_Eukaryota" # specify ancestral node: Node34_Eukaryota or Node39_Archaeplastida
+base_dir <- here(paste0("reconciled_consensus_trees_branch_length_optimization_with_supports_", gsub("_", ".", dataset_name)))
+alerax_dir <- here(paste0("reconciled_trees_", gsub("_", ".", dataset_name)))
+out_dir <- here("data", "branch_length_timing", dataset_name)
 
 bool_exclude_nonvertical <- TRUE
 bool_exclude_small_clades <- TRUE
@@ -20,7 +24,7 @@ bool_verbose <- FALSE
 
 ## Read in data
 # Read in species tree for euk203spp_prokgroups
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk")))
+species_tree <- read.tree(here("data", "species_phylogeny", "processed_species_tree", paste0(dataset_name, ".nwk")))
 species_tree_subtree <- get_subtree_at_node(species_tree, selected_tax_level)$subtree
 species_tree_euks_subtree <- get_subtree_at_node(species_tree, "Node34_Eukaryota")$subtree
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
@@ -45,16 +49,16 @@ n_minimum_species_leca <- 4
 
 ## Read in PhROGs
 # Read in Eukaryota parent PhROGs
-phrogs_long_eukaryota_parent <- read.table(here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
+phrogs_long_eukaryota_parent <- read.table(here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(phrogs_long_eukaryota_parent) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
 phrogs_long_eukaryota_parent <- phrogs_long_eukaryota_parent %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
 # Read in LECA PhROGs
-phrogs_long_eukaryota <- read.table(here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_long.tsv"), sep="\t", header=TRUE)
+phrogs_long_eukaryota <- read.table(here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_long.tsv"), sep="\t", header=TRUE)
 colnames(phrogs_long_eukaryota) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
 phrogs_long_eukaryota <- phrogs_long_eukaryota %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id))
 
 # Read in Lta mapping for Lta2019 to Ltaref
-lta_mapping <- read.delim(here("data/orthogroups/idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
+lta_mapping <- read.delim(here("data", "orthogroups", "idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
 colnames(lta_mapping) <- c("ltaref_id", "lta2019_id")
 lta_mapping$ltaref_id <- paste0("5689_", lta_mapping$ltaref_id)
 lta_mapping$lta2019_id[lta_mapping$lta2019_id == ""] <- NA
@@ -84,15 +88,15 @@ find_parent <- function(query_protein_ids, target_protein_ids) {
 
 ### Extract branch lengths
 print(paste0("Extracting branch lengths for ", selected_OG_id))
-outtablefile <- paste0(out_dir, "/", selected_tax_level, "/tsv/", selected_OG_id, "_consensus50_blopt_normalized_branch_length.tsv")
+outtablefile <- here(out_dir, selected_tax_level, "tsv", paste0(selected_OG_id, "_consensus50_blopt_normalized_branch_length.tsv"))
 if (bool_skip_completed & file.exists(outtablefile)) {
   print("Already completed.")
   quit(save = "no")
 }
 
 # Read in unrooted branch-length optimized consensus tree
-consensus_blopt_tree_filename <- paste0(base_dir, "/", selected_OG_id, "_consensus50_blopt.treefile")
-consensus_blopt_iqtree_filename <- paste0(base_dir, "/", selected_OG_id, "_consensus50_blopt.iqtree")
+consensus_blopt_tree_filename <- here(base_dir, paste0(selected_OG_id, "_consensus50_blopt.treefile"))
+consensus_blopt_iqtree_filename <- here(base_dir, paste0(selected_OG_id, "_consensus50_blopt.iqtree"))
 if (!file.exists(consensus_blopt_tree_filename) | !file.exists(consensus_blopt_iqtree_filename)) {
   print(paste0("Tree not completed: ", selected_OG_id, "_consensus50_blopt.treefile"))
   quit(save = "no")
@@ -206,7 +210,7 @@ for (i in 1:length(PROG_list)) {
     # If no outgroup proteins available, use root from raw consensus tree
     
     # Read in raw alerax consensus tree (rooted)
-    raw_consensus_tree_filename <- paste0(alerax_dir, "/", selected_OG_id, "/reconciliations/summaries/family_1_consensus_50.newick")
+    raw_consensus_tree_filename <- here(alerax_dir, selected_OG_id, "reconciliations", "summaries", "family_1_consensus_50.newick")
     raw_consensus_tree <- read.tree(raw_consensus_tree_filename)
     
     # Get the monophyletic clades descending from the root of raw consensus tree
@@ -395,10 +399,10 @@ for (i in 1:length(PROG_list)) {
   }
   
   # Write out tree with node labels
-  write.tree(consensus_blopt_tree_claderoot, here("reconciled_consensus_trees_for_timing_species.tree.1", paste0(parent_PROG_id, "_consensus50_blopt.treefile.rooted")))
+  write.tree(consensus_blopt_tree_claderoot, here(paste0("reconciled_consensus_trees_branch_length_optimization_with_supports_", dataset_name), selected_tax_level, "labeled_trees", paste0(parent_PROG_id, "_consensus50_blopt.treefile.rooted")))
 }
 
 # Write out branch lengths table
-write.table(bl_df, here("data/branch_length_timing", dataset_name, paste0("branch_lengths_", selected_tax_level, "_", selected_OG_id, ".tsv")), sep="\t", row.names = FALSE, col.names = FALSE, quote=FALSE)
+write.table(bl_df, here(paste0("reconciled_consensus_trees_branch_length_optimization_with_supports_", dataset_name), selected_tax_level, "tsv", paste0("branch_lengths_", selected_tax_level, "_", selected_OG_id, ".tsv")), sep="\t", row.names = FALSE, col.names = FALSE, quote=FALSE)
 
 
