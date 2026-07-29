@@ -14,10 +14,8 @@ This folder contains scripts used to train and generate predictions using DeepLo
    ```bash
    tar -xvf deeploc-2.0.All.tar.gz
    ```
-   
-   Install virtual environment (if not already installed with python installation).
 
-   Use python v3.9.15 to create a virtual environment .venv within deeploc2_package:
+   Use python v3.9.15 to create a virtual environment .venv within deeploc2_package. Note that virtual environment is typically included in a standard Python installation.
    ```bash
    cd deeploc2_package
    python -m venv .venv
@@ -42,13 +40,13 @@ This folder contains scripts used to train and generate predictions using DeepLo
    tar -xJf data.tar.xz -C mito-evolution/data
    ```
 
-2) Replace the default DeepLoc2.0 model weights with the weights from the fully-retrained DeepLoc2.0-mito model:
+   Replace the default DeepLoc2.0 model weights with the weights from the fully-retrained DeepLoc2.0-mito model:
    ```bash
    rm -r DeepLoc2/models/models_prott5
    cp -r mito-evolution/data/deeploc/models/models_prott5_PCP_All_2026.04.05_graphpart.expect1.nopriority DeepLoc2/models/models_prott5
    ```
 
-3) Compile DeepLoc2.0 using the updated model weights:
+   Compile DeepLoc2.0 using the updated model weights:
    ```bash
    rm -rf build
    python -m pip install .
