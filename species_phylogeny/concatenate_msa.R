@@ -1,3 +1,4 @@
+library(here)
 library(tidyverse)
 library(Biostrings)
 library(ape)
@@ -6,10 +7,10 @@ library(basetheme)
 
 ### Concatenate individual protein msa files into a supermatrix
 
-data_dir <- here("data/species_phylogeny/single_protein_msa")
-msa_list <- read.csv(paste0(data_dir, "/trim_msa_list.txt"), header=FALSE)$V1
+data_dir <- here("data", "species_phylogeny", "single_protein_msa")
+msa_list <- read.csv(file.path(data_dir, "trim_msa_list.txt"), header=FALSE)$V1
 # Get list of all species taxids
-all_species_taxids <- read.table(here("data/species_phylogeny/guide_tree", "cytosolic_ribosomal_proteins_97.5pct.spp_euk.tophit.from.archaea_euk657spp.prokspp_other.opisthokonta_parasitic.plants_BaSk_CRuMs_bacteria.nomissing.taxlevel6_combined_taxids.txt"), header=FALSE)$V1
+all_species_taxids <- read.table(here("data", "species_phylogeny", "guide_tree", "cytosolic_ribosomal_proteins_97.5pct.spp_euk.tophit.from.archaea_euk657spp.prokspp_other.opisthokonta_parasitic.plants_BaSk_CRuMs_bacteria.nomissing.taxlevel6_combined_taxids.txt"), header=FALSE)$V1
 exclude_taxids <- c(71139, 112509, 1076696, 158149)
 all_species_taxids <- all_species_taxids[!all_species_taxids %in% c(exclude_taxids)] # Remove low quality species with <=12 ribosomal protein homologs
 all_species_taxid_names <- all_species_taxids
@@ -31,7 +32,7 @@ end_index <- c()
 
 for (gene_msa in msa_list) {
   print(gene_msa)
-  msa <- readAAStringSet(paste0(data_dir, "/", gene_msa))
+  msa <- readAAStringSet(file.path(data_dir, gene_msa))
   
   # Extract taxid
   names(msa) <- sub(pattern="_.*", replacement="", names(msa)) # Uniprot proteomes
@@ -86,5 +87,5 @@ nexus_file_lines <- c(nexus_file_lines, partitions)
 nexus_file_lines <- c(nexus_file_lines, "end;")
 
 ## Write out
-# writeXStringSet(concat_msa, paste0(data_dir, "/concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa"))
-# writeLines(nexus_file_lines, con = paste0(data_dir, "/", "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_partitionfile.nex"))
+writeXStringSet(concat_msa, file.path(data_dir, "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa"))
+writeLines(nexus_file_lines, con = file.path(data_dir, "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_partitionfile.nex"))

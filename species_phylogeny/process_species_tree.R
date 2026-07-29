@@ -1,20 +1,18 @@
 ### Process species tree
-
+library(here)
 library(tidyverse)
 library(ape)
 library(phytools)
 library(TreeTools)
 
-
 dataset_name <- "species_tree_1"
 
-
 # Read in inferred species tree
-inferred_species_tree <- read.tree(here("data/species_phylogeny/maximum_likelihood_species_tree", dataset_name, "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_partitionfile.nex_MFMERGE_rcluster10.best_scheme_constrained.ncbi.tree.manual.changes.v7.1412taxa.contree"))
+inferred_species_tree <- read.tree(here("data", "species_phylogeny", "maximum_likelihood_species_tree", dataset_name, "concat_cytosolic_ribosomal_proteins_97.5pct.spp_muscle5_clipkit.gappy.msa_partitionfile.nex_MFMERGE_rcluster10.best_scheme_constrained.ncbi.tree.manual.changes.v7.1412taxa.contree"))
 
 # Read in prokspp data
-bacteria_tax_collapse <- read.table(here("data/taxonomy", "bacteria_taxids_collapse_for_ncbi_taxonomy_tree_taxids_manual.changes.v6.tsv"), sep="\t", header=TRUE)
-archaea_tax_collapse <- read.table(here("data/taxonomy", "archaea_taxids_collapse_for_ncbi_taxonomy_tree_taxids_manual.changes.v6.tsv"), sep="\t", header=TRUE)
+bacteria_tax_collapse <- read.table(here("data", "taxonomy", "bacteria_taxids_collapse_for_ncbi_taxonomy_tree_taxids_manual.changes.v6.tsv"), sep="\t", header=TRUE)
+archaea_tax_collapse <- read.table(here("data", "taxonomy", "archaea_taxids_collapse_for_ncbi_taxonomy_tree_taxids_manual.changes.v6.tsv"), sep="\t", header=TRUE)
 bacteria_tax_seprows <- bacteria_tax_collapse %>% separate_rows(taxids_for_tree, sep=":1,")
 bacteria_tax_seprows$taxids_for_tree <- gsub(":1", "", bacteria_tax_seprows$taxids_for_tree, fixed=TRUE)
 archaea_tax_seprows <- archaea_tax_collapse %>% separate_rows(taxids_for_tree, sep=":1,")
@@ -83,5 +81,5 @@ inferred_species_tree_rooted$node.label[37] <- "Node37_CAM_Haptista"
 inferred_species_tree_rooted$node.label[38] <- "Node38_CAM"
 inferred_species_tree_rooted$node.label[39] <- "Node39_Archaeplastida"
 
-# ## Write out
-# write.tree(here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk")))
+## Write out
+write.tree(here("data", "species_phylogeny", "processed_species_tree", paste0(dataset_name, ".nwk")))
