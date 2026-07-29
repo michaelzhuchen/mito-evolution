@@ -1,6 +1,7 @@
 ### Assign partitions based on graphpart output
 
 # Load libraries
+library(here)
 library(tidyverse)
 library(Biostrings)
 
@@ -27,10 +28,10 @@ suffix <- "PCP_All_2026.04.05"
 
 ## Read in data
 # Read in training dataset
-multisub_labels_swissprot_mitoepi <- read.csv(here("data/deeploc/data_files", paste0("multisub_swissprot.retained_added.", suffix, ".csv")))
+multisub_labels_swissprot_mitoepi <- read.csv(here("data", "deeploc", "data_files", paste0("multisub_swissprot.retained_added.", suffix, ".csv")))
 
 # Read in partitions from graphpart
-graphpart_assignments <- read.csv(here("data/deeploc/graphpart", paste0("swissprot_", suffix, ".fasta_pident0.3_expect1_nopriority"), "graphpart_assignments.csv"))
+graphpart_assignments <- read.csv(here("data", "deeploc", "graphpart", paste0("swissprot_", suffix, ".fasta_pident0.3_expect1_nopriority"), "graphpart_assignments.csv"))
 
 # Assign partition
 multisub_labels_swissprot_mitoepi$Partition <- graphpart_assignments$cluster[match(multisub_labels_swissprot_mitoepi$ACC, graphpart_assignments$AC)]
@@ -52,13 +53,13 @@ multisub_labels_swissprot_mitoepi_nomissing_nan <- multisub_labels_swissprot_mit
 multisub_labels_swissprot_mitoepi_nomissing_nan[is.na(multisub_labels_swissprot_mitoepi_nomissing_nan)] <- "nan"
 
 ## Write out
-# write.csv(multisub_labels_swissprot_mitoepi_nomissing_nan, here("data/deeploc/data_files", paste0("multisub_5partitions_swissprot.retained_added.", suffix, "_graphpart.expect1.nopriority_nomissing_nan.csv")), row.names=FALSE, quote=FALSE)
+# write.csv(multisub_labels_swissprot_mitoepi_nomissing_nan, here("data", "deeploc", "data_files", paste0("multisub_5partitions_swissprot.retained_added.", suffix, "_graphpart.expect1.nopriority_nomissing_nan.csv")), row.names=FALSE, quote=FALSE)
 
 
 ## Retrieve fasta for partitioned training dataset
 # Read in sequences
-swissprot_fasta <- readAAStringSet(here("data/deeploc/swissprot", "deeploc_swissprot.fasta"))
-mitoepi_fasta <- readAAStringSet(here("data/deeploc/mitotol", "mitoepi_species_combined.fasta")) # all MITO-EPI species proteins
+swissprot_fasta <- readAAStringSet(here("data", "deeploc", "swissprot", "deeploc_swissprot.fasta"))
+mitoepi_fasta <- readAAStringSet(here("data", "deeploc", "mitotol", "mitoepi_species_combined.fasta")) # all MITO-EPI species proteins
 combined_fasta <- c(mitoepi_fasta, swissprot_fasta)
 
 combined_fasta_for_train <- combined_fasta[multisub_labels_swissprot_mitoepi_nomissing$ACC]
@@ -83,6 +84,6 @@ trimmed_list <- lapply(combined_fasta_for_train, trim_middle)
 combined_fasta_for_train_trimmed      <- AAStringSet(trimmed_list)
 names(combined_fasta_for_train_trimmed) <- names(combined_fasta_for_train)
 
-# writeXStringSet(combined_fasta_for_train_trimmed, here("data/deeploc/data_files", paste0("swissprot_", suffix, "_graphpart.expect1.nopriority_clipped4k.fasta")))
+# writeXStringSet(combined_fasta_for_train_trimmed, here("data", "deeploc", "data_files", paste0("swissprot_", suffix, "_graphpart.expect1.nopriority_clipped4k.fasta")))
 
 

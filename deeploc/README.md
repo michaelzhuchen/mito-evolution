@@ -62,12 +62,18 @@ This folder contains scripts used to train and generate predictions using DeepLo
    deeploc2 -f test.fasta -o outputs -m Accurate
    ```
 
+   For attention analysis:
+   ```bash
+   cd deeploc2_package
+   source .venv/bin/activate
+   deeploc2 -f test.fasta -o outputs -m Accurate -p
+
+   Rscript attention_analysis.R
+   ```
 
 ### Typical training workflow
 1. **Install dependencies**  
    Install required packages and environments.
-
-   Install FASTA package (v36.3.8i). Precompiled binaries available at https://fasta.bioch.virginia.edu/wrpearson/fasta/fasta36/, or install from source at https://github.com/wrpearson/fasta36/releases/tag/v36.3.8i_14-Nov-2020.
 
    Install R packages within your R environment:
    ```R
@@ -83,7 +89,11 @@ This folder contains scripts used to train and generate predictions using DeepLo
 
    Install Anaconda. We recommend the Miniconda distribution, available here: https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install
 
-   Install DeepLoc2.0 development version from https://github.com/teevee112/DeepLoc-2.0:
+   Install FASTA package (v36.3.8i). Precompiled binaries available at https://fasta.bioch.virginia.edu/wrpearson/fasta/fasta36/, or install from source at https://github.com/wrpearson/fasta36/releases/tag/v36.3.8i_14-Nov-2020.
+
+   Install Graphpart, available here: https://github.com/graph-part/graph-part. Ensure that ```graphpart``` is in your path.
+
+   Install DeepLoc2.0 development version from https://github.com/teevee112/DeepLoc-2.0. Note that hereafter ```DeepLoc-2.0``` is used as shorthand for the full file path of the installation directory.
    ``` bash
    git clone https://github.com/teevee112/DeepLoc-2.0.git
    cd DeepLoc-2.0
@@ -92,20 +102,38 @@ This folder contains scripts used to train and generate predictions using DeepLo
 
    Replace original scripts:
    ```bash
-      cp mito-evolution/deeploc/2_train/data.py src/data.py
-      cp mito-evolution/deeploc/2_train/metrics.py src/metrics.py
-      cp mito-evolution/deeploc/2_train/model.py src/model.py
+      cp mito-evolution/deeploc/modified_training_scripts/data.py src/data.py
+      cp mito-evolution/deeploc/modified_training_scripts/metrics.py src/metrics.py
+      cp mito-evolution/deeploc/modified_training_scripts/model.py src/model.py
    ```
    
    Modify updated scripts:
+      
       ```src/constants.py```: update filepaths to point to new training dataset
+      
       ```data_files/embed_configs/swissprot_t5.yaml```: update filepaths to point to new training dataset
+      
       ```src/model.py```: update ```pos_weights_bce``` vector (for localization label weights) in ```focal_loss()``` function based on the frequency of each label in the training dataset
 
 2. **Run scripts**  
    
-   Train DeepLoc2.0:
+   Prepare and partition training dataset.
    ```bash
+   cd mito-evolution/deeploc
+
+   # Prepare training data
+   ./run_ggsearch.sh
+   Rscript prepare_training_data.R
+
+   # Partition training data
+   ./run_graphpart.sh
+   Rscript assign_partitions.R
+   ```
+
+   Train model. Note that training can take some time, even on a fast GPU.
+   ```bash
+   cd DeepLoc-2.0
+
    conda activate deeploc20
 
    # Train subcellular localization module
@@ -115,7 +143,7 @@ This folder contains scripts used to train and generate predictions using DeepLo
    python train_ss.py --model Accurate
    ```
 
-   After training, the trained model weights are available in ```models/```.
+   After training, the trained model weights are saved in ```DeepLoc-2.0/models/```.
 
 
 

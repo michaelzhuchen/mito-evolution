@@ -1,20 +1,19 @@
-
+library(here)
 library(tidyverse)
 library(ggplot2)
 library(reshape2)
 theme_set(theme_classic())
 
-
 # Read in datasets
-uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_tax <- read.table(here("data", "taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 
-ogs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
+ogs_long <- read.table(here("data", "orthogroups", "refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
 colnames(ogs_long) <- c("accession", "Orthogroup", "taxid", "BOOL_PRIMARY_OG")
 ogs_long_primary <- ogs_long %>% filter(BOOL_PRIMARY_OG)
 ogs_long_primary_bacteria <- ogs_long_primary %>% filter(taxid %in% uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Bacteria"])
 ogs_long_primary_archaea <- ogs_long_primary %>% filter(taxid %in% uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Archaea"])
 
-origin_table <- read.table(here("data/protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t")
+origin_table <- read.table(here("data", "protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t")
 colnames(origin_table) <- c("OG_id", "n_euk_species_largest_euk_clade", "n_prok_species_largest_prok_clade", "LCA_node", "LCA_node_euks", "origin_domain", "dropped_tips")
 origin_table$OG_id <- gsub(".faa_clipkit.gappy.msa", "", origin_table$OG_id, fixed=TRUE)
 prok_origin_OG_ids <- origin_table$OG_id[origin_table$origin_domain == "Prokaryote"]
@@ -22,15 +21,15 @@ euk_origin_OG_ids <- origin_table$OG_id[origin_table$origin_domain == "Eukaryote
 
 gold_gene_accession_OG_id_df <- read.table(here("data", "mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_2026.04.05.tsv"), sep="\t", header=TRUE)
 
-all_nonmito_accessions <- read.table(here("data/deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
-all_mtdna_accessions <- read.table(here("data/deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
+all_nonmito_accessions <- read.table(here("data", "deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
+all_mtdna_accessions <- read.table(here("data", "deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
 
 # Get TargetP results
 targetp_results <- read.table(here("data", "annotation", "targetp", "euk203spp.mtDNA_prokgroups_underscore_targetp2.0.tsv"), sep="\t", header=TRUE)
 targetp_results <- targetp_results %>% mutate(taxid = gsub("_.*", "", ID))
 targetp_results$Orthogroup <- ogs_long_primary$Orthogroup[match(targetp_results$ID, ogs_long_primary$accession)]
 # Remove orthogroups with any mtDNA encoded proteins
-targetp_results <- targetp_results %>% filter(!ID %in% c(all_mito_accessions, all_nonmito_accessions))
+targetp_results <- targetp_results %>% filter(!ID %in% c(all_mtdna_accessions, all_nonmito_accessions))
 targetp_results <- targetp_results %>% mutate(has_MTS = (Prediction == "mTP"))
 
 # Get human MitoCarta targetp results
@@ -146,14 +145,14 @@ colnames(attn_raw) <- c("protein_id", "AA", "alpha")
 attn_raw <- attn_raw %>% group_by(protein_id) %>% mutate(position_n = row_number()) %>% mutate(position_c = max(position_n) - position_n + 1) %>% ungroup()
 
 # Remove organelle-encoded proteins
-attn <- attn_raw %>% filter(!protein_id %in% c(all_mito_accessions, all_nonmito_accessions))
+attn <- attn_raw %>% filter(!protein_id %in% c(all_mtdna_accessions, all_nonmito_accessions))
 
 ## Filter to include only proteins predicted mito by DeepLoc
 # Read in Retrained DeepLoc data
-deeploc_results <- read.table(here("data/deeploc/predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
+deeploc_results <- read.table(here("data", "deeploc", "predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
 colnames(deeploc_results) <- c("Protein_ID", "Mitochondrion")
 deeploc_results$taxid <- gsub("_.*", "", deeploc_results$Protein_ID)
-deeploc_thresholds <- read.csv(here("data/deeploc", "deeploc_thresholds.csv"))
+deeploc_thresholds <- read.csv(here("data", "deeploc", "deeploc_thresholds.csv"))
 mito_threshold <- deeploc_thresholds$threshold[deeploc_thresholds$label == "Mitochondrion"]
 deeploc_results$label <- "Nonmito"
 deeploc_results$label[deeploc_results$Mitochondrion >= mito_threshold] <- "Mito"
