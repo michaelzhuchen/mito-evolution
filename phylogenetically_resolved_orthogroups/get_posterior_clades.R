@@ -1,14 +1,20 @@
 # Load libraries
+suppressMessages(library(here))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ape))
 suppressMessages(library(castor))
 
+# Get input arguments
+args <- commandArgs(trailingOnly = TRUE)
+dataset_name <- args[1]
+reconciled_trees_dataset_name <- args[2]
+out_dir_name <- args[3]
+OG_id <- args[4]
+
 # Get arguments
-dataset_name <- "species_tree_1"
-base_dir <- here("reconciled_trees_species.tree.1")
-out_dir <- here("reconciled_trees_posterior_clades_species.tree.1")
+base_dir <- here(reconciled_trees_dataset_name)
+out_dir <- here(out_dir_name)
 split_transfer_trees_dir <- here(out_dir, "split_transfer_trees")
-OG_id <- "MOG0001047"
 BOOL_verbose <- FALSE
 
 BOOL_split_transfers_small_clades <- TRUE
@@ -27,12 +33,12 @@ rec_trees_filename <- here("reconciled_trees_species.tree.1", OG_id, "reconcilia
 trees <- read.tree(rec_trees_filename)
 
 # Read in taxonomy data
-uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_tax <- read.table(here("data", "taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 uniprot_proteomes_prok_tree_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain != "Eukaryota"]
 uniprot_proteomes_euk_tree_ids <- uniprot_proteomes_tax$tree_id[uniprot_proteomes_tax$domain == "Eukaryota"]
 
 # Read in species tree
-species_tree <- here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk"))
+species_tree <- here("data", "species_phylogeny", "processed_species_tree", paste0(dataset_name, ".nwk"))
 
 # Calculate node depths
 depths_df <- data.frame(label = c(species_tree$tip.label, species_tree$node.label), distance=get_all_distances_to_root(species_tree, as_edge_count=TRUE))
@@ -62,26 +68,26 @@ euk_protein_ids <- trees[[1]]$tip.label[gsub("_.*", "", trees[[1]]$tip.label) %i
 permitted_split_transfer_donor_recipient_LCA_nodelabels <- unique(c("cellular_organisms", "Archaea", "Asgardgroup", "Eukaryota", "Opimoda", "Amorphea_CRuMs", "Amorphea", "Obazoa", "Diphoda", "Diaphorectickes", "CAM_Haptista", "CAM", "Archaeplastida", uniprot_proteomes_tax$superfamily[uniprot_proteomes_tax$domain == "Eukaryota"]))
 
 # Read in the prokaryote mmseqs2 cluster data
-prokaryote_mmseqs2_clusters_taxids <- read.table(here("data/downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
+prokaryote_mmseqs2_clusters_taxids <- read.table(here("data", "downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
 
 
 ## Read in mito-localization data
 # Read in mito goldp gene list for binary labels: mito, non-mito
-gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_2026.04.05.tsv"), sep="\t", header=TRUE)
+gold_gene_accession_OG_id_df <- read.table(here("data", "mito_orthogroups", "mito_proteins_experimental.and.mtDNA_2026.04.05.tsv"), sep="\t", header=TRUE)
 
 # Read in DeepLoc results
-deeploc_results <- read.table(here("data/deeploc/predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
+deeploc_results <- read.table(here("data", "deeploc", "predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
 colnames(deeploc_results) <- c("Protein_ID", "Mitochondrion")
 
 # Read in organelle-encoded proteins
-mtdna_proteins <- read.table(here("data/deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
-nonmito_organelle_proteins <- read.table(here("data/deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
-missing_mtdna_taxids <- read.table(here("data/deeploc", "missing_mtdna_taxids.txt"))$V1
-missing_nonmito_organelle_taxids <- read.table(here("data/deeploc", "missing_nonmito_organelle_taxids.txt"))$V1
+mtdna_proteins <- read.table(here("data", "deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
+nonmito_organelle_proteins <- read.table(here("data", "deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
+missing_mtdna_taxids <- read.table(here("data", "deeploc", "missing_mtdna_taxids.txt"))$V1
+missing_nonmito_organelle_taxids <- read.table(here("data", "deeploc", "missing_nonmito_organelle_taxids.txt"))$V1
 
 # Ignore unedited mtDNA proteins and likely NUMTs in Arabidopsis
 ath_proteins_curr <- grep("3702_", trees[[1]]$tip.label, fixed=TRUE, value=TRUE)
-ath_uneditedmtdna_or_numt_proteins <- read.table(here("data/mito_orthogroups", "ath_unedited_numt_mtdna_proteins.txt"))$V1
+ath_uneditedmtdna_or_numt_proteins <- read.table(here("data", "mito_orthogroups", "ath_unedited_numt_mtdna_proteins.txt"))$V1
 ath_uneditedmtdna_or_numt_proteins <- ath_uneditedmtdna_or_numt_proteins[ath_uneditedmtdna_or_numt_proteins %in% ath_proteins_curr]
 if (length(ath_uneditedmtdna_or_numt_proteins) > 0) {
   if (BOOL_verbose) {

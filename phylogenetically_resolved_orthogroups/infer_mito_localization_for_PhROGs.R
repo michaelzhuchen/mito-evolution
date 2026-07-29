@@ -1,25 +1,29 @@
 # Load libraries
+suppressMessages(library(here))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ape))
 suppressMessages(library(castor))
 suppressMessages(library(phytools))
 
-# Get arguments
-dataset_name <- "species_tree_1"
+# Get input arguments
+args <- commandArgs(trailingOnly = TRUE)
+dataset_name <- args[1]
+reconciled_trees_dataset_name <- args[2]
+reconciled_consensus_trees_branch_length_dataset_name <- args[3]
+OG_id <- args[4]
+
 phrog_base_dir <- here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long")
 consensus50_blopt_tree_dir <- here("reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.1")
 alerax_dir <- here("reconciled_trees_species.tree.1")
 out_dir <- here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long")
-OG_id <- "MOG0001047"
 bool_verbose <- FALSE
-
 
 ### Initialize parameters and data
 # Set random seed
 set.seed(42)
 
 # Focal taxonomic levels for which to generate PhROGs
-selected_tax_levels <- read.table(here("data/phylogenetically_resolved_orthogroups", paste0(dataset_name, "_tax_levels_for_phrogs_wholeproteome.txt")), header=FALSE)$V1
+selected_tax_levels <- read.table(here("data", "phylogenetically_resolved_orthogroups", paste0(dataset_name, "_tax_levels_for_phrogs_wholeproteome.txt")), header=FALSE)$V1
 
 # Core species taxids
 completed_mitoproteomes_species_list <- c("9606", "559292", "3702", "1257118", "5689", "185431", "5741", "32595")
@@ -33,12 +37,12 @@ if (!file.exists(consensus50_bl_opt_tree_filename)) {
 }
 
 # Read in Eukaryota parent PhROGs for the current OG
-parent_progs_long_raw <- read.table(here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
+parent_progs_long_raw <- read.table(here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(parent_progs_long_raw) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
 phrogs_long_eukaryota_parent <- parent_progs_long_raw %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(OG_id == OG_id) %>% filter(!duplicated(protein_id))
 
 # Read in Lta mapping for Lta2019 to Ltaref
-lta_mapping <- read.delim(here("data/orthogroups/idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
+lta_mapping <- read.delim(here("data", "orthogroups", "idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
 colnames(lta_mapping) <- c("ltaref_id", "lta2019_id")
 lta_mapping$ltaref_id <- paste0("5689_", lta_mapping$ltaref_id)
 lta_mapping$lta2019_id[lta_mapping$lta2019_id == ""] <- NA
@@ -70,17 +74,17 @@ if (length(lta2019_protein_ids) > 0) {
 
 ### Determine ancestral localizations
 # Read in experimental and mtDNA mito proteins
-gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_2026.04.05.tsv"), sep="\t", header=TRUE)
+gold_gene_accession_OG_id_df <- read.table(here("data", "mito_orthogroups", "mito_proteins_experimental.and.mtDNA_2026.04.05.tsv"), sep="\t", header=TRUE)
 
 # Read in deeploc predictions
-deeploc_results <- read.table(here("data/deeploc/predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
+deeploc_results <- read.table(here("data", "deeploc", "predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
 colnames(deeploc_results) <- c("Protein_ID", "Mitochondrion")
 
 # Read in organelle-encoded proteins
-mtdna_proteins <- read.table(here("data/deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
-nonmito_organelle_proteins <- read.table(here("data/deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
-missing_mtdna_taxids <- read.table(here("data/deeploc", "missing_mtdna_taxids.txt"))$V1
-missing_nonmito_organelle_taxids <- read.table(here("data/deeploc", "missing_nonmito_organelle_taxids.txt"))$V1
+mtdna_proteins <- read.table(here("data", "deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
+nonmito_organelle_proteins <- read.table(here("data", "deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
+missing_mtdna_taxids <- read.table(here("data", "deeploc", "missing_mtdna_taxids.txt"))$V1
+missing_nonmito_organelle_taxids <- read.table(here("data", "deeploc", "missing_nonmito_organelle_taxids.txt"))$V1
 
 # Function to extract all clades from a tree
 get_clades <- function(tree) {
@@ -123,7 +127,7 @@ for (i in 1:length(parent_phrogs)) {
     # If no outgroup proteins available, use root from raw consensus tree
     
     # Read in raw alerax consensus tree (rooted)
-    raw_consensus_tree_filename <- paste0(alerax_dir, "/", OG_id, "/reconciliations/summaries/family_1_consensus_50.newick")
+    raw_consensus_tree_filename <- file.path(alerax_dir, OG_id, "reconciliations", "summaries", "family_1_consensus_50.newick")
     raw_consensus_tree <- read.tree(raw_consensus_tree_filename)
     
     # Get the monophyletic clades descending from the root of raw consensus tree
@@ -192,8 +196,7 @@ for (i in 1:length(parent_phrogs)) {
       if (bool_verbose) {
         print("Rooting on branch...")
       }
-      # consensus_blopt_tree_claderoot <- root(consensus_blopt_tree_claderoot, node = new_root_index, resolve.root = TRUE)
-      
+
       # Root using phytools:reroot to root at the midpoint of the branch
       root_edge_length <- consensus_blopt_tree_claderoot$edge.length[consensus_blopt_tree_claderoot$edge[,2] == new_root_index]
       consensus_blopt_tree_claderoot <- reroot(consensus_blopt_tree_claderoot, new_root_index, position = root_edge_length/2)
@@ -203,7 +206,6 @@ for (i in 1:length(parent_phrogs)) {
       if (bool_verbose) {
         print(paste0("Rooting on tip: ", consensus_blopt_tree_claderoot$tip.label[new_root_index]))
       }
-      # consensus_blopt_tree_claderoot <- root(consensus_blopt_tree_claderoot, outgroup = new_root_index, resolve.root = TRUE)
       root_edge_length <- consensus_blopt_tree_claderoot$edge.length[consensus_blopt_tree_claderoot$edge[,2] == new_root_index]
       consensus_blopt_tree_claderoot <- reroot(consensus_blopt_tree_claderoot, new_root_index, position = root_edge_length/2)
     }
@@ -254,7 +256,7 @@ for (i in 1:length(parent_phrogs)) {
   
   # Ignore unedited mtDNA proteins and likely NUMTs in Arabidopsis
   ath_proteins_curr <- grep("3702_", curr_tree$tip.label, fixed=TRUE, value=TRUE)
-  ath_uneditedmtdna_or_numt_proteins <- read.table(here("data/mito_orthogroups", "ath_unedited_numt_mtdna_proteins.txt"))$V1
+  ath_uneditedmtdna_or_numt_proteins <- read.table(here("data", "mito_orthogroups", "ath_unedited_numt_mtdna_proteins.txt"))$V1
   ath_uneditedmtdna_or_numt_proteins <- ath_uneditedmtdna_or_numt_proteins[ath_uneditedmtdna_or_numt_proteins %in% ath_proteins_curr]
   if (length(ath_uneditedmtdna_or_numt_proteins) > 0) {
     if (bool_verbose) {

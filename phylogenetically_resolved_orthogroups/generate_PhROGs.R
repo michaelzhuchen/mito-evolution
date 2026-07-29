@@ -1,17 +1,21 @@
 # Load libraries
+suppressMessages(library(here))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ape))
 suppressMessages(library(castor))
 
-# Get arguments
-dataset_name <- "species_tree_1"
-base_dir <- here("reconciled_trees_posterior_clades_species.tree.1")
-out_dir <- here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long")
-OG_id <- "MOG0001047"
+# Get input arguments
+args <- commandArgs(trailingOnly = TRUE)
+dataset_name <- args[1]
+reconciled_trees_posterior_clades_dataset_name <- args[2]
+OG_id <- args[3]
+
+base_dir <- here(reconciled_trees_posterior_clades_dataset_name)
+out_dir <- here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long")
 BOOL_verbose <- FALSE
 
 # Focal taxonomic levels for which to generate PhROGs
-selected_tax_levels <- read.table(here("data/phylogenetically_resolved_orthogroups", paste0(dataset_name, "_tax_levels_for_phrogs_wholeproteome.txt")), header=FALSE)$V1
+selected_tax_levels <- read.table(here("data", "phylogenetically_resolved_orthogroups", paste0(dataset_name, "_tax_levels_for_phrogs_wholeproteome.txt")), header=FALSE)$V1
 
 filename <- paste0(OG_id, "_euk_monophyletic_clades.tsv")
 
@@ -24,7 +28,7 @@ duplications_rec_support_threshold <- 0
 fraction_euk_species_threshold <- 0.18
 
 # euk203spp_prokgroups
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk")))
+species_tree <- read.tree(here("data", "species_phylogeny", "processed_species_tree", paste0(dataset_name, ".nwk")))
 species_tree_euks_subtree <- get_subtree_at_node(species_tree, "Node34_Eukaryota")$subtree
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
 species_tree_euks_labels <- c(species_tree_euks_subtree$tip.label, species_tree_euks_subtree$node.label)
@@ -34,7 +38,7 @@ depths_df <- data.frame(label = c(species_tree$tip.label, species_tree$node.labe
 prok_euk_parent_labels <- c("Node1_cellular_organisms", "Node30_Archaea", "Node31_Archaea", "Node32_Archaea", "Node33_Asgardgroup")
 
 # Read in fusion proteins primary OG assignments to designate primary OGs
-fusion_protein_primary_disjoint_OG_mapping <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "euk673spp_prokgroups_OG_all_merged.hmm.foldseek_add.species.singleton.mtDNA_50AA_expect1e-10_fusion.protein_to_OG.txt"), sep="\t", header=TRUE)
+fusion_protein_primary_disjoint_OG_mapping <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "euk673spp_prokgroups_OG_all_merged.hmm.foldseek_add.species.singleton.mtDNA_50AA_expect1e-10_fusion.protein_to_OG.txt"), sep="\t", header=TRUE)
 
 ## Preprocess posterior clades
 if (BOOL_verbose) {
@@ -46,7 +50,7 @@ colnames(monophyletic_clades) <- c("OG_id", "label", "distance_to_root", "refere
 
 # Map lta2019 to ltaref
 # Read in Lta mapping for Lta2019 to Ltaref
-lta_mapping <- read.delim(here("data/orthogroups/idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
+lta_mapping <- read.delim(here("data", "orthogroups", "idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
 colnames(lta_mapping) <- c("ltaref_id", "lta2019_id")
 lta_mapping$ltaref_id <- paste0("5689_", lta_mapping$ltaref_id)
 lta_mapping$lta2019_id[lta_mapping$lta2019_id == ""] <- NA
@@ -88,7 +92,7 @@ monophyletic_clades_filter <- monophyletic_clades %>% filter(count >= clade_supp
 
 # Refine taxonomic labels for mixed prok+euk clades
 # Read in the prokaryote mmseqs2 cluster data
-prokaryote_mmseqs2_clusters_taxids <- read.table(here("data/downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
+prokaryote_mmseqs2_clusters_taxids <- read.table(here("data", "downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
 all_proteins_remove_first_underscore <- sub("^[^_]*_", "", unlist(strsplit(monophyletic_clades_filter$reference_protein_ids, split=",")))
 prokaryote_mmseqs2_clusters_taxids <- prokaryote_mmseqs2_clusters_taxids[which(prokaryote_mmseqs2_clusters_taxids$rep_seq %in% all_proteins_remove_first_underscore),]
 # Get prokaryote proteins and species counts
@@ -123,7 +127,7 @@ if (length(relabel_euk_indexes) > 0) {
 }
 
 if (BOOL_verbose) {
-  write.table(monophyletic_clades_filter, paste0(out_dir, "/", OG_id, "_relabeled_clades.tsv"), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
+  write.table(monophyletic_clades_filter, file.path(out_dir, paste0(OG_id, "_relabeled_clades.tsv")), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
 }
 
 
@@ -143,11 +147,11 @@ for (selected_tax_level in selected_tax_levels) {
     BOOL_split_duplications_at_selected_tax_level <- TRUE
   }
   
-  curr_out_dir <- paste0(out_dir, "/", original_selected_tax_level)
+  curr_out_dir <- file.path(out_dir, original_selected_tax_level)
   dir.create(curr_out_dir, showWarnings = FALSE)
   
   # Check for completion
-  if (file.exists(paste0(curr_out_dir, "/", OG_id, "_", original_selected_tax_level, "_PhROGs_long.tsv"))) {
+  if (file.exists(file.path(curr_out_dir, paste0(OG_id, "_", original_selected_tax_level, "_PhROGs_long.tsv")))) {
     if (BOOL_verbose) {
       print("Already completed")
     }
@@ -215,7 +219,7 @@ for (selected_tax_level in selected_tax_levels) {
   
   # If no species under taxonomic level are in the OG, write empty file and skip
   if (nrow(monophyletic_clades_filter_selected_tax_level_sep_rows_intaxlevel) == 0) {
-    file.create(paste0(curr_out_dir, "/", OG_id, "_", original_selected_tax_level, "_PhROGs_long.tsv"))
+    file.create(file.path(curr_out_dir, paste0(OG_id, "_", original_selected_tax_level, "_PhROGs_long.tsv")))
     next
   }
   
@@ -245,9 +249,9 @@ for (selected_tax_level in selected_tax_levels) {
   monophyletic_clades_filter_preceding_tax_level_sep_rows_noduplications <- monophyletic_clades_filter_preceding_tax_level_sep_rows %>% filter(!(species_overlap > species_overlap_threshold & species_overlap_support >= species_overlap_support_threshold & duplications_rec >= duplications_rec_support_threshold))
   
   if (BOOL_verbose) {
-    write.table(monophyletic_clades_filter_preceding_tax_level_sep_rows, paste0(curr_out_dir, "/", OG_id, "_clades.tsv"), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
-    write.table(monophyletic_clades_filter_preceding_tax_level_sep_rows_duplications, paste0(curr_out_dir, "/", OG_id, "_clades_preceding_duplications.tsv"), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
-    write.table(monophyletic_clades_filter_preceding_tax_level_sep_rows_noduplications, paste0(curr_out_dir, "/", OG_id, "_clades_preceding_noduplications.tsv"), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
+    write.table(monophyletic_clades_filter_preceding_tax_level_sep_rows, file.path(curr_out_dir, paste0(OG_id, "_clades.tsv")), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
+    write.table(monophyletic_clades_filter_preceding_tax_level_sep_rows_duplications, file.path(curr_out_dir, paste0(OG_id, "_clades_preceding_duplications.tsv")), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
+    write.table(monophyletic_clades_filter_preceding_tax_level_sep_rows_noduplications, file.path(curr_out_dir, paste0(OG_id, "_clades_preceding_noduplications.tsv")), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
   }
   
   # Remove ancestral rows that precede duplications
