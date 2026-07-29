@@ -1,16 +1,20 @@
 ### Identify HGTs from posterior clades
 
 # Load libraries
+suppressMessages(library(here))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ape))
 suppressMessages(library(castor))
 
-# Get arguments from command line
-args <- commandArgs(trailingOnly=TRUE)
-base_dir <- here("reconciled_trees_posterior_clades_species.tree.1")
-out_dir <- here("data/horizontal_gene_transfer", "species_tree_1")
-OG_id <- "MOG0001047"
-selected_tax_level <- "Node34_Eukaryota_parent" # To find initial gain into eukaryotes
+# Get input arguments
+args <- commandArgs(trailingOnly = TRUE)
+dataset_name <- args[1]
+reconciled_trees_dataset <- args[2]
+selected_tax_level <- args[3]
+OG_id <- args[4]
+
+base_dir <- here(reconciled_trees_dataset)
+out_dir <- here("data", "horizontal_gene_transfer", dataset_name)
 BOOL_verbose <- FALSE
 
 filename <- paste0(OG_id, "_euk_monophyletic_clades.tsv")
@@ -36,7 +40,7 @@ if (grepl("_parent$", selected_tax_level)) {
 
 
 # Skip OGs that have Eukaryotic origin. Only consider OGs that are Prokaryotic origin or Indeterminate
-origin_table <- read.table(here("data/protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t")
+origin_table <- read.table(here("data", "protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t")
 colnames(origin_table) <- c("OG_id", "n_euk_species_largest_euk_clade", "n_prok_species_largest_prok_clade", "LCA_node", "LCA_node_euks", "origin_domain", "dropped_tips")
 origin_table$OG_id <- gsub(".faa_clipkit.gappy.msa", "", origin_table$OG_id, fixed=TRUE)
 if (origin_table$origin_domain[origin_table$OG_id == OG_id] == "Eukaryote") {
@@ -46,9 +50,9 @@ if (origin_table$origin_domain[origin_table$OG_id == OG_id] == "Eukaryote") {
   quit(save = "no")
 }
 
-uniprot_proteomes_all_tax <- read.delim(here("data/taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_all_tax <- read.delim(here("data", "taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", "species_tree_1.nwk"))
+species_tree <- read.tree(here("data", "species_phylogeny", "processed_species_tree", paste0(dataset_name, ".nwk")))
 
 species_tree_subtree <- get_subtree_at_node(species_tree, selected_tax_level)$subtree
 species_tree_euks_subtree <- get_subtree_at_node(species_tree, "Node34_Eukaryota")$subtree
@@ -97,7 +101,7 @@ for (daughter_index in daughter_indexes) {
 }
 
 # Read in fusion proteins primary OG assignments to designate primary OGs
-fusion_protein_primary_disjoint_OG_mapping <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "euk673spp_prokgroups_OG_all_merged.hmm.foldseek_add.species.singleton.mtDNA_50AA_expect1e-10_fusion.protein_to_OG.txt"), sep="\t", header=TRUE)
+fusion_protein_primary_disjoint_OG_mapping <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "euk673spp_prokgroups_OG_all_merged.hmm.foldseek_add.species.singleton.mtDNA_50AA_expect1e-10_fusion.protein_to_OG.txt"), sep="\t", header=TRUE)
 
 ## Scan posterior clades for HGT into eukaryotes
 monophyletic_clades_filter_selected_tax_level_largest_clades_agg <- c()
@@ -105,12 +109,12 @@ monophyletic_clades_filter_selected_tax_level_largest_clades_long_agg <- c()
 
 
 ### Generate clade frequency table
-monophyletic_clades <- read.table(paste0(base_dir, "/", filename), sep="\t")
+monophyletic_clades <- read.table(file.path(base_dir, filename), sep="\t")
 colnames(monophyletic_clades) <- c("OG_id", "label", "distance_to_root", "reference_protein_ids", "nonvertical_protein_ids", "count", "species_overlap", "species_overlap_support", "species_overlap_taxids", "duplications_rec", "mito_localization_prob", "n_species", "n_reference_proteins") # vtesting
 
 # Map lta2019 to ltaref
 # Read in Lta mapping for Lta2019 to Ltaref
-lta_mapping <- read.delim(here("data/orthogroups/idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
+lta_mapping <- read.delim(here("data", "orthogroups", "idmapping", "map.ltaref.lta.exact.txt"), header=FALSE)
 colnames(lta_mapping) <- c("ltaref_id", "lta2019_id")
 lta_mapping$ltaref_id <- paste0("5689_", lta_mapping$ltaref_id)
 lta_mapping$lta2019_id[lta_mapping$lta2019_id == ""] <- NA
@@ -157,7 +161,7 @@ monophyletic_clades_filter <- monophyletic_clades %>% filter(count >= clade_supp
 
 ## Refine taxonomic labels for mixed prok+euk clades
 # Read in the prokaryote mmseqs2 cluster data
-prokaryote_mmseqs2_clusters_taxids <- read.table(here("data/downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
+prokaryote_mmseqs2_clusters_taxids <- read.table(here("data", "downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
 all_proteins_remove_first_underscore <- sub("^[^_]*_", "", unlist(strsplit(monophyletic_clades_filter$reference_protein_ids, split=",")))
 prokaryote_mmseqs2_clusters_taxids <- prokaryote_mmseqs2_clusters_taxids[which(prokaryote_mmseqs2_clusters_taxids$rep_seq %in% all_proteins_remove_first_underscore),]
 # Get prokaryote proteins and species counts
@@ -368,7 +372,7 @@ prokaryote_mmseqs2_clusters_taxids <- read.table(here("data/downsample_prokaryot
 
 # Read in alerax rec trees
 alerax_base_dir <- "reconciled_trees"
-rec_trees_filename <- here(paste0(alerax_base_dir, "/", OG_id, "/reconciliations/family_1.rec_uml"))
+rec_trees_filename <- here(alerax_base_dir, OG_id, "reconciliations", "family_1.rec_uml")
 if (!file.exists(rec_trees_filename)) {
   quit(save="no")
 } else {

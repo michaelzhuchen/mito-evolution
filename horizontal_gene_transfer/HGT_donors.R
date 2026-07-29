@@ -1,17 +1,16 @@
 ### HGT analysis
 
 # Load libraries
+library(here)
 library(tidyverse)
 library(ape)
 library(castor)
 library(phytools)
 
-## Select dataset
-dataset_name <- "species_tree_1"
-
-## Select focal taxonomic level
-selected_tax_level <- "Node34_Eukaryota" # LECA
-# selected_tax_level <- "Node39_Archaeplastida" # Plastid control
+# Get input arguments
+args <- commandArgs(trailingOnly = TRUE)
+dataset_name <- args[1]
+selected_tax_level <- args[2]
 
 ## Read in data
 # Read in taxonomic data
@@ -147,10 +146,10 @@ combined_hgt_phrog_ancestor_prok_origin <- combined_hgt_phrog_ancestor_prok_orig
 combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long <- combined_hgt_phrog_ancestor_prok_origin %>% separate_rows(HGT_self_sister, sep=",") %>% rowwise() %>% mutate(taxon = gsub("\\(.*\\)", "", HGT_self_sister), fraction_species_coverage = as.numeric(gsub(".*\\(([^)]+)\\)", "\\1", HGT_self_sister))) %>% filter(fraction_species_coverage >= fraction_species_coverage_threshold)
 
 # Subset and rename columns
-leca_HGT_long <- leca_HGT_long[,c("OG_id", "PhROG_id", "count", "fraction_euk_species", "sister_clade_fraction_euk_species", "cousin_clade_fraction_euk_species", "HGT_sister", "HGT_self_sister", "taxon", "bool_in_mito")]
-colnames(leca_HGT_long) <- c("OG_ID", "PhROG_ID", "Support (conditional_clade_probability x 100)", "Fraction_eukaryotic_species_in_clade", "Fraction_eukaryotic_species_in_sister_clade", "Fraction_eukaryotic_species_in_cousin_clade", "Prokaryotic_groups_in_sister_clade (fraction_of_prokaryotic_group_species)", "Top_prokaryotic_group_in_sister_clade (enrichment_score)", "Top_prokaryotic_group_in_sister_clade", "In_reconstructed_ancestral_mitochondria")
+combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long <- combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long[,c("OG_id", "PhROG_id", "count", "fraction_euk_species", "sister_clade_fraction_euk_species", "cousin_clade_fraction_euk_species", "HGT_sister", "HGT_self_sister", "taxon", "bool_in_mito")]
+colnames(combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long) <- c("OG_ID", "PhROG_ID", "Support (conditional_clade_probability x 100)", "Fraction_eukaryotic_species_in_clade", "Fraction_eukaryotic_species_in_sister_clade", "Fraction_eukaryotic_species_in_cousin_clade", "Prokaryotic_groups_in_sister_clade (fraction_of_prokaryotic_group_species)", "Top_prokaryotic_group_in_sister_clade (enrichment_score)", "Top_prokaryotic_group_in_sister_clade", "In_reconstructed_ancestral_mitochondria")
 
 ## Write out
-# write.table(combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long, here("data/horizontal_gene_transfer", paste0("HGT_", selected_tax_level, "_long.tsv")), sep="\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(combined_hgt_phrog_HGT_self_sister_leca_prok_origin_all_long, here("data/horizontal_gene_transfer", paste0("HGT_", selected_tax_level, "_long.tsv")), sep="\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 
