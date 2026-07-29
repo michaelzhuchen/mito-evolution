@@ -53,7 +53,7 @@ multisub_labels_swissprot_mitoepi_nomissing_nan <- multisub_labels_swissprot_mit
 multisub_labels_swissprot_mitoepi_nomissing_nan[is.na(multisub_labels_swissprot_mitoepi_nomissing_nan)] <- "nan"
 
 ## Write out
-# write.csv(multisub_labels_swissprot_mitoepi_nomissing_nan, here("data", "deeploc", "data_files", paste0("multisub_5partitions_swissprot.retained_added.", suffix, "_graphpart.expect1.nopriority_nomissing_nan.csv")), row.names=FALSE, quote=FALSE)
+write.csv(multisub_labels_swissprot_mitoepi_nomissing_nan, here("data", "deeploc", "data_files", paste0("multisub_5partitions_swissprot.retained_added.", suffix, "_graphpart.expect1.nopriority_nomissing_nan.csv")), row.names=FALSE, quote=FALSE)
 
 
 ## Retrieve fasta for partitioned training dataset
@@ -84,6 +84,6 @@ trimmed_list <- lapply(combined_fasta_for_train, trim_middle)
 combined_fasta_for_train_trimmed      <- AAStringSet(trimmed_list)
 names(combined_fasta_for_train_trimmed) <- names(combined_fasta_for_train)
 
-# writeXStringSet(combined_fasta_for_train_trimmed, here("data", "deeploc", "data_files", paste0("swissprot_", suffix, "_graphpart.expect1.nopriority_clipped4k.fasta")))
+writeXStringSet(combined_fasta_for_train_trimmed, here("data", "deeploc", "data_files", paste0("swissprot_", suffix, "_graphpart.expect1.nopriority_clipped4k.fasta")))
 
 

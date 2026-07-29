@@ -308,6 +308,6 @@ names(combined_fasta_for_train)[which(multisub_labels_swissprot_mitoepi$Mitochon
 
 
 ## Write out
-# write.csv(multisub_labels_swissprot_mitoepi, here("data", "deeploc", "data_files", paste0("multisub_swissprot.retained_added.", suffix, ".csv")), row.names=FALSE, quote=FALSE)
-# writeXStringSet(combined_fasta_for_train, here("data", "deeploc", "data_files", paste0("swissprot_", suffix, ".fasta")))
+write.csv(multisub_labels_swissprot_mitoepi, here("data", "deeploc", "data_files", paste0("multisub_swissprot.retained_added.", suffix, ".csv")), row.names=FALSE, quote=FALSE)
+writeXStringSet(combined_fasta_for_train, here("data", "deeploc", "data_files", paste0("swissprot_", suffix, ".fasta")))
 
