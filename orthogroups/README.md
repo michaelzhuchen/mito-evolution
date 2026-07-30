@@ -30,12 +30,12 @@ This folder contains scripts used to perform orthogroup analysis. Note that this
    conda install bioconda::orthofinder==2.5.5
    ```
 
-   Install mmseqs2, available here: https://github.com/soedinglab/mmseqs2
-   Install mafft, available here: https://mafft.cbrc.jp/alignment/software/
-   Install ClipKIT, available here: https://github.com/jlsteenwyk/clipkit
-   Install HH-suite, available here: https://github.com/soedinglab/hh-suite
-   Install Open MPI, available here: https://docs.open-mpi.org/en/v5.0.x/installing-open-mpi/quickstart.html
-
+   Install mmseqs2 (v15-0b27c9d), available here: https://github.com/soedinglab/mmseqs2 \
+   Install mafft (v7.520), available here: https://mafft.cbrc.jp/alignment/software/ \
+   Install ClipKIT (v2.3.0), available here: https://github.com/jlsteenwyk/clipkit \
+   Install HH-suite (v3.3.0), available here: https://github.com/soedinglab/hh-suite \
+   Install Foldseek (v9-427df8a), available here: https://github.com/steineggerlab/foldseek \
+   Install Open MPI (v4.1.6), available here: https://docs.open-mpi.org/en/v5.0.x/installing-open-mpi/quickstart.html
 
    Extract tar archives downloaded from Zenodo repository.
    ```bash
@@ -49,14 +49,14 @@ This folder contains scripts used to perform orthogroup analysis. Note that this
    cd mito-evolution
    ```
 
-   # Raw orthogroups from OrthoFinder
+   #### Raw orthogroups from OrthoFinder
    Run OrthoFinder to infer raw orthogroups from a set of species proteome FASTA files. Note that this is compute and memory intensive, so multiple CPUs and high RAM are recommended. The most time-intensive step is pairwise alignment, which can be precomputed and parallelized using the -op and -b options (see documentation here for details: https://github.com/davidemms/OrthoFinder)
    ```bash
    conda activate OrthoFinder_v255
    orthofinder -f species_fastas/ -t 256 -a 32 -og
    ```
 
-   # Initially merged orthogroups from first merge
+   #### Initially merged orthogroups from first merge
    Build alignments for each raw nonsingleton orthogroup, using FASTA files from OrthoFinder raw orthogroups as input. For each orthogroup, run:
    ```bash
    BASEDIR="first_merge"
@@ -113,7 +113,7 @@ This folder contains scripts used to perform orthogroup analysis. Note that this
    Rscript orthogroups/1_initially_merged_orthogroups/merge/get_initially_merged_orthogroups.R
    ```
 
-   # Fully merged orthogroups from second merge
+   #### Fully merged orthogroups from second merge
    
    Build alignments for each initially merged orthogroup, using FASTA files for initially merged orthogroups as input. For each orthogroup, run:
    ```bash
@@ -184,7 +184,7 @@ This folder contains scripts used to perform orthogroup analysis. Note that this
    ```
 
 
-   # Refined orthogroups from mapping singleton proteins, added proteins, and fusion proteins
+   #### Refined orthogroups from mapping singleton proteins, added proteins, and fusion proteins
    
    Map singleton proteins, added proteins, and fusion proteins to their fully merged orthogroups to generate refined orthogroups. This step takes compute-intensive hmmsearch results as inputs; precomputed inputs are available in ```data/orthogroups/```.
    ```bash

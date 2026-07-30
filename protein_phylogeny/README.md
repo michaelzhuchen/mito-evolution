@@ -18,8 +18,10 @@ This folder contains scripts used to perform protein phylogenetic inference.
    install.packages(phytools)
    ```
 
-   Install muscle (v5), available here: https://www.drive5.com/muscle/. \
-   Install IQ-TREE (v2.3.6), available here: https://iqtree.github.io/. \
+   Install MUSCLE (v5.1), available here: https://www.drive5.com/muscle/ \
+   Install IQ-TREE (v2.3.6), available here: https://iqtree.github.io/ \
+   Install AleRax (v1.2), available here: https://github.com/BenoitMorel/AleRax \
+   Install MAD (v2.2), available here: doi.org/10.1038/s41559-017-0193
 
 2. **Run scripts**  
    Navigate to the base directory and run scripts. Note that these steps can be compute-intensive and may run slowly on large datasets.

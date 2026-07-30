@@ -87,9 +87,9 @@ This folder contains scripts used to train and generate predictions using DeepLo
 
    Install Anaconda. We recommend the Miniconda distribution, available here: https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install
 
-   Install FASTA package (v36.3.8i). Precompiled binaries available at https://fasta.bioch.virginia.edu/wrpearson/fasta/fasta36/, or install from source at https://github.com/wrpearson/fasta36/releases/tag/v36.3.8i_14-Nov-2020.
+   Install ggsearch from FASTA package (v36.3.8i). Precompiled binaries available at https://fasta.bioch.virginia.edu/wrpearson/fasta/fasta36/, or install from source at https://github.com/wrpearson/fasta36/releases/tag/v36.3.8i_14-Nov-2020.
 
-   Install Graphpart, available here: https://github.com/graph-part/graph-part. Ensure that ```graphpart``` is in your path.
+   Install Graphpart (v1.0.2), available here: https://github.com/graph-part/graph-part. Ensure that ```graphpart``` is in your path.
 
    Install DeepLoc2.0 development version from https://github.com/teevee112/DeepLoc-2.0. Note that hereafter ```DeepLoc-2.0``` is used as shorthand for the full file path of the installation directory.
    ``` bash
