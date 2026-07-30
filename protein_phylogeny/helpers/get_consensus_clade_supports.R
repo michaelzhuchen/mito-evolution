@@ -6,10 +6,10 @@ alerax_directory <- args[2]
 output_directory <- args[3]
 OG_id <- args[4]
 
-final_tree_file <- paste0(consensus_blopt_directory, "/", OG_id, '_consensus50_blopt.treefile')
-alerax_consensus_file <- paste0(alerax_directory, "/", OG_id, "/reconciliations/summaries/family_1_consensus_50.newick")
+final_tree_file <- file.path(consensus_blopt_directory, paste0(OG_id, "_consensus50_blopt.treefile"))
+alerax_consensus_file <- file.path(alerax_directory, OG_id, "reconciliations", "summaries", "family_1_consensus_50.newick")
 final_tree_file_basename <- gsub("\\..*", "", gsub(".*\\/", "", final_tree_file))
-out_tree_file <- paste0(output_directory, '/', final_tree_file_basename, '_supports.treefile')
+out_tree_file <- file.path(output_directory, paste0(final_tree_file_basename, "_supports.treefile"))
 
 if (file.exists(out_tree_file)) {
   quit(save = "no")

@@ -1,17 +1,19 @@
 #!/bin/sh
 
-families_file_template="families_template_pruned.ufboot.rooted.txt"
-species_tree="data/species_phylogeny/processed_species_tree/species_tree_1.nwk"
-base_output_directory="reconciled_trees_species.tree.1"
-parametrization_file="alerax_model_parameterization_Node34_Eukaryota.txt"
-fraction_missing_file="fraction_missing_euk203spp_prokgroups_alerax.txt"
+OGID=$1
+DATASETNAME=$2
+BASEOUTDIR=$3
 
-OGID="MOG0001047"
+BASE_DIR="alignments_and_initial_trees"
 
+species_tree="data/species_phylogeny/processed_species_tree/${DATASETNAME}.nwk"
+families_file_template="protein_phylogeny/helpers/families_template_pruned.ufboot.rooted.txt"
+parametrization_file="protein_phylogeny/helpers/alerax_model_parameterization_Node34_Eukaryota.txt"
+fraction_missing_file="protein_phylogeny/helpers/fraction_missing_euk203spp_prokgroups_alerax.txt"
 
 MSAFILE="${OGID}.faa_clipkit.gappy.msa"
 
-OUTPUT_DIR="${base_output_directory}/${OGID}"
+OUTPUT_DIR="${BASEOUTDIR}/${OGID}"
 
 mkdir -p $OUTPUT_DIR
 

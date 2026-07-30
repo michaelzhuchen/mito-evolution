@@ -1,7 +1,7 @@
 #!/bin/bash
 
-OGID="MOG0001047"
-N_CORES="1"
+OGID=$1
+N_CORES=$2
 
 FAAFILE="alignments_and_initial_trees/$OGID.faa"
 MSAFILE="${FAAFILE}.msa"

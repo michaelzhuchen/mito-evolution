@@ -1,15 +1,19 @@
 ### Infer domain of origin, prune prokaryotes, and root by MAD (in largest prokaryotic outgroup if prokaryotic origin)
 
 # Load libraries. Also requires MAD-2.2
+suppressMessages(library(here))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ape))
 suppressMessages(library(castor))
 suppressMessages(library(stringr))
 
-# Get arguments
+# Get input arguments
+args <- commandArgs(trailingOnly = TRUE)
+MSA_id <- args[1]
+dataset_name <- args[2]
+
 base_dir <- here("alignments_and_initial_trees")
 out_dir <- here("pruned_rooted_trees")
-MSA_id <- "MOG0001047.faa_clipkit.gappy.msa"
 bool_verbose <- FALSE
 
 # Set random seed
@@ -27,17 +31,17 @@ if (bool_verbose) {
 }
 
 # Identify ML tree: either treefile or contree
-file_lines <- readLines(paste0(base_dir, "/", MSA_id, ".iqtree"))
+file_lines <- readLines(file.path(base_dir, paste0(MSA_id, ".iqtree")))
 bool_use_consensus_tree <- any(grepl("Consensus tree has higher likelihood than ML tree found", file_lines))
 if (bool_use_consensus_tree) {
   ML_tree_suffix <- ".contree"
 } else {
   ML_tree_suffix <- ".treefile"
 }
-ML_tree_filename <- paste0(base_dir, "/", MSA_id, ML_tree_suffix)
+ML_tree_filename <- file.path(base_dir, paste0(MSA_id, ML_tree_suffix))
 
 # Read in ufboot trees
-ufboot_trees_filename <- paste0(base_dir, "/", MSA_id, ".ufboot")
+ufboot_trees_filename <- file.path(base_dir, paste0(MSA_id, ".ufboot"))
 
 if (!file.exists(ML_tree_filename) | !file.exists(ufboot_trees_filename)) {
   quit(save="no")
@@ -85,15 +89,15 @@ if (length(rename_mtDNA_proteins) > 0) {
 
 
 # Read in species tree
-species_tree <- here("data/species_phylogeny/processed_species_tree", "species_tree_1.nwk")
+species_tree <- here("data", "species_phylogeny", "processed_species_tree", paste0(dataset_name, ".nwk"))
 species_tree_labels <- c(species_tree$tip.label, species_tree$node.label)
 
 # Read in uniprot tax data
-uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_tax <- read.table(here("data", "taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 uniprot_proteomes_euk_taxids <- uniprot_proteomes_tax$TaxId[uniprot_proteomes_tax$domain == "Eukaryota"]
 
 # Read in uniprot all species tax data
-uniprot_proteomes_all_tax <- read.delim(here("data/taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_all_tax <- read.delim(here("data", "taxonomy", "uniprot_bacteria.downsample.level6_tax_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 bacteria_taxids <- uniprot_proteomes_all_tax$TaxId[which(uniprot_proteomes_all_tax$domain == "Bacteria")]
 archaea_taxids <- uniprot_proteomes_all_tax$TaxId[which(uniprot_proteomes_all_tax$domain == "Archaea")]
 n_bacteria_species <- length(bacteria_taxids)
@@ -129,7 +133,7 @@ count_large_prokgroups_in_clade <- function(prok_species_in_clade) {
 }
 
 # Read in the prokaryote mmseqs2 cluster data
-prokaryote_mmseqs2_clusters_taxids <- read.table(here("data/downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
+prokaryote_mmseqs2_clusters_taxids <- read.table(here("data", "downsample_prokaryotes", "prokaryote_mmseqs2_clusters_taxids.tsv"), sep="\t", quote="", header=TRUE)
 ML_proteins_remove_first_underscore <- sub("^[^_]*_", "", ML_tree$tip.label)
 prokaryote_mmseqs2_clusters_taxids_in_tree <- prokaryote_mmseqs2_clusters_taxids[which(prokaryote_mmseqs2_clusters_taxids$rep_seq %in% ML_proteins_remove_first_underscore),]
 
@@ -260,7 +264,7 @@ if (any(largest_monophyletic_clades$n_large_prokgroups_largest_prok_clade > 0 & 
 
 if (bool_verbose) {
   print(paste0("Inferred origin: ", origin_domain))
-  write.table(curr_df, paste0(out_dir, "/", MSA_id, "_clades.tsv"), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
+  write.table(curr_df, file.path(out_dir, paste0(MSA_id, "_clades.tsv")), sep="\t", row.names = FALSE, col.names = TRUE, quote=FALSE)
 }
 
 if (origin_domain == "Prokaryote") {
@@ -382,7 +386,7 @@ if (origin_domain == "Prokaryote") {
     } else {
       ML_tree_rooted <- root(ML_tree, outgroup = root_index, resolve.root=TRUE)
     }
-    write.tree(ML_tree_rooted, paste0(out_dir, "/", MSA_id, "_pruned", ML_tree_suffix, ".rooted"))
+    write.tree(ML_tree_rooted, file.path(out_dir, paste0(MSA_id, "_pruned", ML_tree_suffix, ".rooted")))
     
     if (bool_verbose) {
       print(paste0("Outgroup rooting UFBOOT trees (largest prokaryote clade has 1-2 tips)"))
@@ -412,14 +416,14 @@ if (origin_domain == "Prokaryote") {
         ufboot_trees_rooted[[i]] <- root(ufboot_trees[[i]], outgroup = root_index, resolve.root=TRUE)
       }
     }
-    write.tree(ufboot_trees_rooted, paste0(out_dir, "/", MSA_id, "_pruned.ufboot.rooted"))
+    write.tree(ufboot_trees_rooted, file.path(out_dir, paste0(MSA_id, "_pruned.ufboot.rooted")))
   } else {
     # Largest prokaryote clade has more than 2 tips
     if (bool_verbose) {
       print(paste0("MAD rooting ML tree"))
     }
     tree_largest_prok_clade_subtree <- extract_subtree_for_clade(ML_tree, prok_proteins_largest_prok_clade_list)
-    tree_largest_prok_clade_subtree_filename <- paste0(out_dir, "/", MSA_id, "_largest.prok.clade_pruned", ML_tree_suffix)
+    tree_largest_prok_clade_subtree_filename <- file.path(out_dir, paste0(MSA_id, "_largest.prok.clade_pruned", ML_tree_suffix))
     write.tree(tree_largest_prok_clade_subtree, tree_largest_prok_clade_subtree_filename)
     outfile <- paste0(tree_largest_prok_clade_subtree_filename, ".rooted")
     if (!file.exists(outfile) | file.size(outfile) == 0) {
@@ -427,7 +431,7 @@ if (origin_domain == "Prokaryote") {
     }
     tree_largest_prok_clade_subtree_rooted <- read.tree(paste0(tree_largest_prok_clade_subtree_filename, ".rooted"))
     ML_tree_rooted <- root_tree_from_rooted_subtree(ML_tree, tree_largest_prok_clade_subtree_rooted)
-    write.tree(ML_tree_rooted, paste0(out_dir, "/", MSA_id, "_pruned", ML_tree_suffix, ".rooted"))
+    write.tree(ML_tree_rooted, file.path(out_dir, paste0(MSA_id, "_pruned", ML_tree_suffix, ".rooted")))
     
     if (bool_verbose) {
       print(paste0("MAD rooting UFBOOT trees"))
@@ -436,7 +440,7 @@ if (origin_domain == "Prokaryote") {
     for (i in 1:length(ufboot_trees)) {
       ufboot_trees_largest_prok_clade_subtrees[[i]] <- extract_subtree_for_clade(ufboot_trees[[i]], prok_proteins_largest_prok_clade_list)
     }
-    ufboot_trees_largest_prok_clade_subtree_filename <- paste0(out_dir, "/", MSA_id, "_largest.prok.clade_pruned.ufboot")
+    ufboot_trees_largest_prok_clade_subtree_filename <- file.path(out_dir, paste0(MSA_id, "_largest.prok.clade_pruned.ufboot"))
     write.tree(ufboot_trees_largest_prok_clade_subtrees, ufboot_trees_largest_prok_clade_subtree_filename)
     
     outfile <- paste0(ufboot_trees_largest_prok_clade_subtree_filename, ".rooted")
@@ -467,7 +471,7 @@ if (origin_domain == "Prokaryote") {
     for (i in 1:length(ufboot_trees)) {
       ufboot_trees_rooted[[i]] <- root_tree_from_rooted_subtree(ufboot_trees[[i]], ufboot_trees_largest_prok_clade_subtree_rooted[[i]])
     }
-    write.tree(ufboot_trees_rooted, paste0(out_dir, "/", MSA_id, "_pruned.ufboot.rooted"))
+    write.tree(ufboot_trees_rooted, file.path(out_dir, paste0(MSA_id, "_pruned.ufboot.rooted")))
   }
   
 } else if (origin_domain == "Indeterminate") {
@@ -491,18 +495,18 @@ if (origin_domain == "Prokaryote") {
   if (bool_verbose) {
     print(paste0("MAD rooting ML tree"))
   }
-  write.tree(ML_tree, paste0(out_dir, "/", MSA_id, "_pruned", ML_tree_suffix))
+  write.tree(ML_tree, file.path(out_dir, paste0(MSA_id, "_pruned", ML_tree_suffix)))
   
-  outfile <- paste0(out_dir, "/", MSA_id, "_pruned", ML_tree_suffix, ".rooted")
+  outfile <- file.path(out_dir, paste0(MSA_id, "_pruned", ML_tree_suffix, ".rooted"))
   if (!file.exists(outfile) | file.size(outfile) == 0) {
-    system(paste0("mad -nt ", paste0(out_dir, "/", MSA_id, "_pruned", ML_tree_suffix), " > /dev/null"))
+    system(paste0("mad -nt ", file.path(out_dir, paste0(MSA_id, "_pruned", ML_tree_suffix)), " > /dev/null"))
   }
   
   if (bool_verbose) {
     print(paste0("MAD rooting UFBOOT trees"))
   }
   
-  ufboot_trees_filename <- paste0(out_dir, "/", MSA_id, "_pruned.ufboot")
+  ufboot_trees_filename <- file.path(out_dir, paste0(MSA_id, "_pruned.ufboot"))
   write.tree(ufboot_trees, ufboot_trees_filename)
   
   outfile <- paste0(ufboot_trees_filename, ".rooted")
@@ -546,18 +550,18 @@ if (origin_domain == "Prokaryote") {
   if (bool_verbose) {
     print(paste0("MAD rooting ML tree"))
   }
-  write.tree(ML_tree, paste0(out_dir, "/", MSA_id, "_pruned", ML_tree_suffix))
+  write.tree(ML_tree, file.path(out_dir, paste0(MSA_id, "_pruned", ML_tree_suffix)))
   
-  outfile <- paste0(out_dir, "/", MSA_id, "_pruned", ML_tree_suffix, ".rooted")
+  outfile <- file.path(out_dir, paste0(MSA_id, "_pruned", ML_tree_suffix, ".rooted"))
   if (!file.exists(outfile) | file.size(outfile) == 0) {
-    system(paste0("mad -nt ", paste0(out_dir, "/", MSA_id, "_pruned", ML_tree_suffix), " > /dev/null"))
+    system(paste0("mad -nt ", file.path(out_dir, paste0(MSA_id, "_pruned", ML_tree_suffix)), " > /dev/null"))
   }
   
   if (bool_verbose) {
     print(paste0("MAD rooting UFBOOT trees"))
   }
   
-  ufboot_trees_filename <- paste0(out_dir, "/", MSA_id, "_pruned.ufboot")
+  ufboot_trees_filename <- file.path(out_dir, paste0(MSA_id, "_pruned.ufboot"))
   write.tree(ufboot_trees, ufboot_trees_filename)
   
   outfile <- paste0(ufboot_trees_filename, ".rooted")
@@ -599,7 +603,7 @@ dropped_tips <- c(dup_proteins, remove_mtDNA_proteins, prok_proteins_to_drop)
 LCA_df <- data.frame(MSA_id = MSA_id, n_euk_species_largest_euk_clade = largest_monophyletic_clades$n_euk_species_largest_euk_clade, n_prok_species_largest_prok_clade = largest_monophyletic_clades$n_prok_species_largest_prok_clade, LCA_node_ALE = LCA_node_ALE, LCA_node_euks_ALE = LCA_node_euks_ALE, origin_domain = origin_domain, dropped_tips = paste0(dropped_tips, collapse=","))
 
 # Check for completion
-ufboot_rooted_trees <- read.tree(paste0(out_dir, "/", MSA_id, "_pruned.ufboot.rooted"))
+ufboot_rooted_trees <- read.tree(file.path(out_dir, paste0(MSA_id, "_pruned.ufboot.rooted")))
 if (length(ufboot_rooted_trees) < n_ufboot_trees) {
   print(paste0(MSA_id, " task failed. Fewer than ", n_ufboot_trees, " ufboot trees successfully rooted."))
   quit(save="no")
@@ -607,5 +611,5 @@ if (length(ufboot_rooted_trees) < n_ufboot_trees) {
 
 
 ## Write out
-# write.table(LCA_df, here("data/protein_phylogeny", paste0("orthogroup_origin_domain_", MSA_id, ".tsv")), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
+write.table(LCA_df, here("data", "protein_phylogeny", paste0("orthogroup_origin_domain_", MSA_id, ".tsv")), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
 
