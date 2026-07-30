@@ -9,7 +9,9 @@ This repository contains code used in the study "Comparative analysis of mitocho
 ```
 mito-evolution/
 ├── abSENSE_HMM/ # estimate homology detection power across orthogroups
+├── benchmarks/ # benchmarks for orthogroups and phylogenetically-resolved orthogroups
 ├── branch_length_timing/ # estimate origination timing from branch length
+├── comparative/ # comparative mitoproteome analyses
 ├── deeploc/ # train DeepLoc2.0-mito on new mitoproteomes and predict
 ├── horizontal_gene_transfer/ # identify prokaryote-derived HGT and putative donor lineages
 ├── orthogroups/ # refined orthogroups inference pipeline
@@ -18,6 +20,7 @@ mito-evolution/
 ├── protein_phylogeny/ # protein phylogeny inference, processing, and reconciliation pipeline
 ├── reconstruction/ # ancestral reconstruction
 ├── species_phylogeny/ # species tree inference
+├── specific_analyses_per_organism/ # MitoTOL organism-specific analyses
 ├── utils/ # utility scripts
 ├── LICENSE # MIT License
 └── README.md # this file
@@ -35,23 +38,28 @@ mito-evolution/
    ```bash
    git clone https://github.com/michaelzhuchen/mito-evolution.git
    ```
+   Note that hereafter ```mito-evolution``` is used as shorthand for the file path of this base directory.
 
 2. **Download data**  
    Download the full dataset from the Zenodo archive and unpack each tar.xz archive to a directory with the same name within the `mito-evolution` directory, e.g.:
 
    ```bash
    tar -xJf data.tar.xz -C mito-evolution/data
+   tar -xJf alignments_and_initial_trees.tar.xz -C mito-evolution/alignments_and_initial_trees
+   tar -xJf reconciled_trees_species.tree.1.tar.xz -C mito-evolution/reconciled_trees_species.tree.1
+   ...
    ```
 
 3. **Install dependencies**  
    Install required packages and environments - see per-module documentation for details
 
 4. **Run scripts**  
-   Navigate to the module and run scripts from that working directory, e.g.:
+   Navigate to the module and run scripts from that working directory, or follow the per-module documentation where available.
    ```bash
    cd mito-evolution/ancestral_reconstruction
    Rscript reconstruction.R
    ```
 
+   Caution: some scripts generate output files that may overwrite existing files downloaded from Zenodo.
 
 
