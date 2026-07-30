@@ -1,22 +1,22 @@
 ### Get added proteins from added/updated species and added mtDNA annotations
 
 # Added/updated species
-tophit_5741 <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_5741_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_81824 <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_81824_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_595528 <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_595528_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_667725 <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_667725_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_691883 <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_691883_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_946362 <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_946362_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_ACANB_new_proteins <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_ACANB.new.proteins_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_BaSk <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_BaSk_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_CRuMs <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_CRuMs_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_parasiticplants <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_ParasiticPlants_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_ltaref_new_proteins <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_ltaref.new.proteins_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_5741 <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_5741_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_81824 <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_81824_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_595528 <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_595528_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_667725 <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_667725_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_691883 <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_691883_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_946362 <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_946362_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_ACANB_new_proteins <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_ACANB.new.proteins_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_BaSk <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_BaSk_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_CRuMs <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_CRuMs_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_parasiticplants <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_ParasiticPlants_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_ltaref_new_proteins <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_ltaref.new.proteins_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
 
 # Added mtDNA annotations
-tophit_mtDNA_new_proteins <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA.added_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_mtDNA_new_proteins_2025.04.07 <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA.added.2025.04.07_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
-tophit_mtDNA_new_proteins_2025.05.31 <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA.added.2025.05.31_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_mtDNA_new_proteins <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA.added_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_mtDNA_new_proteins_2025.04.07 <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA.added.2025.04.07_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
+tophit_mtDNA_new_proteins_2025.05.31 <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA.added.2025.05.31_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"))
 
 # Remove incorrectly matched accessions from mtDNA and rename incorrect taxid
 tophit_mtDNA_new_proteins <- tophit_mtDNA_new_proteins[!grepl("^2086695_", tophit_mtDNA_new_proteins$V1),]

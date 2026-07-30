@@ -2,7 +2,7 @@ suppressMessages(library(ape))
 suppressMessages(library(tidyverse))
 suppressMessages(library(castor))
 
-source(here("orthogroups/helpers", "species_overlap_utils.R"))
+source(here("orthogroups", "helpers", "species_overlap_utils.R"))
 
 # Get OG id from command line
 args <- commandArgs(trailingOnly=TRUE)
@@ -13,9 +13,9 @@ suffix <- args[4]
 BOOL_STRUCTURE_MERGE <- as.logical(args[5])
 
 ## Read in hhsearch results
-hhsearch_tsv_file <- paste0(data_dir, "/", OG_id, suffix, ".tsv")
+hhsearch_tsv_file <- file.path(data_dir, paste0(OG_id, suffix, ".tsv"))
 
-outputfile <- paste0(outdir, "/", OG_id, suffix, "_filter_overlap_coef.tsv")
+outputfile <- file.path(outdir, paste0(OG_id, suffix, "_filter_overlap_coef.tsv"))
 
 # Check if file exists and is not empty
 if (!file.exists(hhsearch_tsv_file) | file.size(hhsearch_tsv_file) == 0) {
@@ -52,10 +52,10 @@ hhsearch_OG_filter <- hhsearch_OG_filter[!duplicated(hhsearch_OG_filter[,c("quer
 ## Create copies matrix
 if (BOOL_STRUCTURE_MERGE) {
   # For hmm+structure merge, directly use the copies matrix after the initial merge
-  copies_mat <- readRDS(here("data/orthogroups/first_merge", "OG_all_merged_copies_mat.rds"))
+  copies_mat <- readRDS(here("data", "orthogroups", "first_merge", "OG_all_merged_copies_mat.rds"))
 } else {
   # For initial hmm-hmm merge, reformat the original copies table into a copies matrix
-  orthogroups_copies <- readRDS(here("data/orthogroups/raw_orthogroups/Orthogroups", "Orthogroups.GeneCount_ACABI.best.isoform.rds"))
+  orthogroups_copies <- readRDS(here("data", "orthogroups", "raw_orthogroups", "Orthogroups", "Orthogroups.GeneCount_ACABI.best.isoform.rds"))
   copies_mat <- orthogroups_copies[,2:ncol(orthogroups_copies)]
   rownames(copies_mat) <- orthogroups_copies$Orthogroup
 }
@@ -83,5 +83,5 @@ if (BOOL_STRUCTURE_MERGE) {
 }
 
 ## Write out
-# write.table(hhsearch_OG_filter_overlap_coef, outputfile, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(hhsearch_OG_filter_overlap_coef, outputfile, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
 

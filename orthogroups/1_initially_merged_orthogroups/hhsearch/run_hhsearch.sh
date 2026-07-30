@@ -1,13 +1,12 @@
 #!/bin/sh
 
-OGID="OG0002514"
-OUTDIR_TSV="output_directory"
-DB_NAME="first_merge/OG_raw_trimmed_hhsuite_db"
-DBNAME="OG_raw_trimmed_hhsuite"
+OGID=$1
+QUERYFILE_SUFFIX=$2
+QUERYDIR=$3
+TARGETDB=$4
+OUTDIR=$5
 
-
-FAAFILE="$OGID"
-MSAFILE="${FAAFILE}${QUERYFILE_SUFFIX}"
+MSAFILE="${OGID}${QUERYFILE_SUFFIX}"
 
 # Specify output file suffix
 OUTFILENAME="${MSAFILE}_global.hhr"
@@ -16,7 +15,7 @@ OUTFILE="$OUTDIR/$OUTFILENAME"
 if [[ ! -s "$OUTFILE" ]]
 then
 	# For global alignment, filter by expect for hmm merge
-	hhsearch -i $MSAFILE -d $DB_NAME -M 50 -maxres 65535 -E 1 -o $OUTFILE -v 0 -glob
+	hhsearch -i $QUERYDIR/$MSAFILE -d $TARGETDB -M 50 -maxres 65535 -E 1 -o $OUTFILE -v 0 -glob
 fi
 
 # Process the HHR results to TSV
@@ -25,7 +24,7 @@ OUTFILE_TSV="${OUTDIR_TSV}/${OUTFILENAME}_expect1e-3.tsv" # for hmm merge
 if [[ ! -s "$OUTFILE_TSV" ]]
 then
 	# Use python script to extract out the hits below the expect threshold
-	python process_hhr_to_tsv_expect_threshold.py $OUTFILE $OUTFILE_TSV
+	python orthogroups/1_initially_merged_orthogroups/hhsearch/process_hhr_to_tsv_expect_threshold.py $OUTFILE $OUTFILE_TSV
 
 	# Add the query OG as the first column
 	sed -i "s/^/$OGID\t/" $OUTFILE_TSV

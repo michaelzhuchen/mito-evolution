@@ -1,13 +1,15 @@
 ## Process merged orthogroups
+library(here)
+library(tidyverse)
 
 # Read in raw OGs
-orthogroups <- read.delim(here("data/orthogroups/raw_orthogroups/Orthogroups", "Orthogroups.tsv"), header=TRUE)
-all_OG_ids <- read.table(here("data/orthogroups/raw_orthogroups/Orthogroups", "raw_OG_ids_652euks.txt"))$V1
+orthogroups <- read.delim(here("data", "orthogroups", "raw_orthogroups", "Orthogroups", "Orthogroups.tsv"), header=TRUE)
+all_OG_ids <- read.table(here("data", "orthogroups", "raw_orthogroups", "Orthogroups", "raw_OG_ids_652euks.txt"))$V1
 # Exclude the OGs that are only present in the excluded species
 orthogroups <- orthogroups[which(orthogroups$Orthogroup %in% all_OG_ids),]
 
 # Read in merged copies mat
-copies_mat_update <- readRDS(here("data/orthogroups/first_merge", "copies_mat_update_merge.bidir.nonbidir_first_merge.rds"))
+copies_mat_update <- readRDS(here("data", "orthogroups", "first_merge", "copies_mat_update_merge.bidir.nonbidir_first_merge.rds"))
 
 # Remove the original OG rows that have been merged. These start with an "X"
 copies_mat_update <- copies_mat_update[!grepl("X", rownames(copies_mat_update)),]
@@ -23,6 +25,6 @@ orthogroups_merge <- orthogroups_merge %>% group_by(merge_index) %>% summarize(a
 orthogroups_merge <- orthogroups_merge[,2:ncol(orthogroups_merge)]
 
 ## Write out
-# write.table(orthogroups_merge, here("data/orthogroups/first_merge", "first_merged_orthogroups.tsv"), sep="\t", quote=FALSE, row.names=FALSE, col.names=TRUE)
+write.table(orthogroups_merge, here("data", "orthogroups", "first_merge", "first_merged_orthogroups.tsv"), sep="\t", quote=FALSE, row.names=FALSE, col.names=TRUE)
 
 

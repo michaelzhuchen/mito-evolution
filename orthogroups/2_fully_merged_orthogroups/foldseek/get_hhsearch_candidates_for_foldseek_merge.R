@@ -1,7 +1,8 @@
+library(here)
 library(tidyverse)
 
 # Read in OG_all_merged hhsearch results with precomputed overlap coef using the updated OG all merged copies mat.
-hhsearch_OG <- read.table(here("data/orthogroups/second_merge", "OG_all_merged_full.msa_vs_all_hhsuite_prob30_tsv_overlap_coef_with_merged_combined.tsv"), sep="\t")
+hhsearch_OG <- read.table(here("data", "orthogroups", "second_merge", "OG_all_merged_full.msa_vs_all_hhsuite_prob30_tsv_overlap_coef_with_merged_combined.tsv"), sep="\t")
 colnames(hhsearch_OG) <- c("query_OG", "target_OG", "expect", "score", "overlap_coef", "prob")
 
 # Filter
@@ -27,6 +28,6 @@ hhsearch_OG_filter_bidir <- hhsearch_OG_filter[hhsearch_OG_filter$combined_OG_id
 hhsearch_OG_filter_bidir <- hhsearch_OG_filter_bidir[!duplicated(hhsearch_OG_filter_bidir$combined_OG_ids),]
 
 ## Write out filtered OG pairs for foldseek
-# write.table(hhsearch_OG_filter_bidir[, c("query_OG", "target_OG")], here("data/orthogroups/second_merge", "OG_all_merged_full.msa_vs_all_hhsuite_prob30_overlap_coef0.3_bidir_top50hits_OG_id_query.target_v2.txt"), sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
-# write.table(hhsearch_OG_filter_bidir, here("data/orthogroups/second_merge", "OG_all_merged_full.msa_vs_all_hhsuite_prob30_overlap_coef0.3_bidir_top50hits_OG_id_hhsearch_table.tsv"), sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(hhsearch_OG_filter_bidir[, c("query_OG", "target_OG")], here("data", "orthogroups", "second_merge", "OG_all_merged_full.msa_vs_all_hhsuite_prob30_overlap_coef0.3_bidir_top50hits_OG_id_query.target.txt"), sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(hhsearch_OG_filter_bidir, here("data", "orthogroups", "second_merge", "OG_all_merged_full.msa_vs_all_hhsuite_prob30_overlap_coef0.3_bidir_top50hits_OG_id_hhsearch_table.tsv"), sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
 

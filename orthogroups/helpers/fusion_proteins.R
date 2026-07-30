@@ -1,32 +1,32 @@
 ### Identify fusion proteins
 
 ## Read in disjoint hits for initial set of 656 euks used for raw OGs
-combined_fusion_protein_filter_disjoint_original_species <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "hmmsearch_fusion_protein_candidates_expect1e-10_DBSIZE.379668_processed_1e-10_combined_sort_split_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_original_species <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "hmmsearch_fusion_protein_candidates_expect1e-10_DBSIZE.379668_processed_1e-10_combined_sort_split_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
 colnames(combined_fusion_protein_filter_disjoint_original_species) <- c("protein_id", "disjoint_hits")
 combined_fusion_protein_filter_disjoint_original_species <- combined_fusion_protein_filter_disjoint_original_species[which(combined_fusion_protein_filter_disjoint_original_species$protein_id != "protein_id"),]
 # Read in fusion protein candidates and OG ids
-fusion_protein_candidates_OG_id <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged.hmm.foldseek_50AA_fusion_protein_candidates_OG_ids.txt"))
+fusion_protein_candidates_OG_id <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged.hmm.foldseek_50AA_fusion_protein_candidates_OG_ids.txt"))
 colnames(fusion_protein_candidates_OG_id) <- c("protein_id", "orthogroup")
 # Map each protein to its OG ID
 combined_fusion_protein_filter_disjoint_original_species$orthogroup <- fusion_protein_candidates_OG_id$orthogroup[match(combined_fusion_protein_filter_disjoint_original_species$protein_id, fusion_protein_candidates_OG_id$protein_id)]
 
 ## For added/updated species, singletons, mtDNA proteins
 # Read in disjoint hits
-combined_fusion_protein_filter_disjoint_5741 <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_5741_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_81824 <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_81824_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_595528 <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_595528_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_667725 <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_667725_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_691883 <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_691883_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_946362 <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_946362_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_ACANB <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_ACANB.new.proteins_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_BaSk <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_BaSk_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_CRuMs <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_CRuMs_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_parasiticplants <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_ParasiticPlants_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_mtDNA <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_mtDNA.added_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_singleton <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged.hmm.foldseek_hmm_vs_singleton_proteins_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_mtDNA_added.2025.04.07 <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_mtDNA.added.2025.04.07_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_mtDNA_added.2025.05.31 <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_mtDNA.added.2025.05.31_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
-combined_fusion_protein_filter_disjoint_ltaref <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_ltaref.new.proteins_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_5741 <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_5741_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_81824 <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_81824_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_595528 <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_595528_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_667725 <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_667725_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_691883 <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_691883_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_946362 <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_946362_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_ACANB <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_ACANB.new.proteins_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_BaSk <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_BaSk_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_CRuMs <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_CRuMs_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_parasiticplants <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_ParasiticPlants_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_mtDNA <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_mtDNA.added_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_singleton <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged.hmm.foldseek_hmm_vs_singleton_proteins_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_mtDNA_added.2025.04.07 <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_mtDNA.added.2025.04.07_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_mtDNA_added.2025.05.31 <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_mtDNA.added.2025.05.31_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
+combined_fusion_protein_filter_disjoint_ltaref <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged_hmm_vs_ltaref.new.proteins_expect1e-3_DBSIZE.379668_processed_1e-10_combined.tsv_expect1e-10_disjoint.tsv"), sep="\t", header=FALSE)
 
 # Remove incorrectly matched accessions from mtDNA and rename incorrect taxid
 combined_fusion_protein_filter_disjoint_mtDNA <- combined_fusion_protein_filter_disjoint_mtDNA[!grepl("^2086695_", combined_fusion_protein_filter_disjoint_mtDNA$V1),]
@@ -37,7 +37,7 @@ colnames(combined_fusion_protein_filter_disjoint_add_species) <- c("protein_id",
 colnames(combined_fusion_protein_filter_disjoint_singleton) <- c("protein_id", "disjoint_hits")
 
 # Read in added fusion protein candidates with their OG ids
-fusion_protein_candidates_OG_id <- read.table(here("data/orthogroups/hmmsearch_fusion_proteins", "OG_all_merged.hmm.foldseek_add.species.singleton.mtDNA_50AA_fusion_protein_candidates_OG_ids.txt"))
+fusion_protein_candidates_OG_id <- read.table(here("data", "orthogroups", "hmmsearch_fusion_proteins", "OG_all_merged.hmm.foldseek_add.species.singleton.mtDNA_50AA_fusion_protein_candidates_OG_ids.txt"))
 colnames(fusion_protein_candidates_OG_id) <- c("protein_id", "orthogroup")
 # Map original member OG
 combined_fusion_protein_filter_disjoint_add_species$orthogroup <- fusion_protein_candidates_OG_id$orthogroup[match(combined_fusion_protein_filter_disjoint_add_species$protein_id, fusion_protein_candidates_OG_id$protein_id)]

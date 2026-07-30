@@ -1,5 +1,5 @@
 ### Get singleton proteins
-tophit_singleton <- read.table(here("data/orthogroups/hmmsearch_singleton_proteins", "hmmsearch_singleton_proteins_expect1e-3_DBSIZE.379668_tophit.tsv"))
+tophit_singleton <- read.table(here("data", "orthogroups", "hmmsearch_singleton_proteins", "hmmsearch_singleton_proteins_expect1e-3_DBSIZE.379668_tophit.tsv"))
 colnames(tophit_singleton) <- c("protein_id", "OG_id")
 
 # Split ties into separate rows

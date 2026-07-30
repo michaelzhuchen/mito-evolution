@@ -9,25 +9,25 @@ library(Biostrings)
 
 ## Start from raw orthogroups
 # Read in raw orthogroups
-orthogroups <- read.delim(here("data/orthogroups/raw_orthogroups/Orthogroups", "Orthogroups.tsv"), header=TRUE)
+orthogroups <- read.delim(here("data", "orthogroups", "raw_orthogroups", "Orthogroups", "Orthogroups.tsv"), header=TRUE)
 
 ## First and second merges
 # Read in hmm-merged OGs
-orthogroups_merge <- read.table(here("data/orthogroups/first_merge", "first_merged_orthogroups.tsv"), sep="\t", header = TRUE)
+orthogroups_merge <- read.table(here("data", "orthogroups", "first_merge", "first_merged_orthogroups.tsv"), sep="\t", header = TRUE)
 # Assign new OG ids for merged OGs
 new_OG_ids <- sprintf("MOG%07d", 1:nrow(orthogroups_merge))
 orthogroups_merge$Orthogroup_original <- orthogroups_merge$Orthogroup
 orthogroups_merge$Orthogroup[grep(",", orthogroups_merge$Orthogroup)] <- new_OG_ids[grep(",", orthogroups_merge$Orthogroup)]
 
 # Read in hmm+structure merged OGs
-orthogroups_foldseek_merge <- read.table(here("data/orthogroups/second_merge", "second_merged_orthogroups.tsv"), sep="\t", header = TRUE)
+orthogroups_foldseek_merge <- read.table(here("data", "orthogroups", "second_merge", "second_merged_orthogroups.tsv"), sep="\t", header = TRUE)
 # Assign new OG ids for hmm+structure merged OGs
 new_OG_ids <- sprintf("SOG%07d", 1:nrow(orthogroups_foldseek_merge))
 orthogroups_foldseek_merge$Orthogroup_original <- orthogroups_foldseek_merge$Orthogroup
 orthogroups_foldseek_merge$Orthogroup[grep(",", orthogroups_foldseek_merge$Orthogroup)] <- new_OG_ids[grep(",", orthogroups_foldseek_merge$Orthogroup)]
 
 # Remove redundant hmm-merged OGs that are further merged by hmm+structure
-copies_mat_update <- readRDS(here("data/orthogroups/second_merge", "second_merged_copies_mat.rds"))
+copies_mat_update <- readRDS(here("data", "orthogroups", "second_merge", "second_merged_copies_mat.rds"))
 copies_mat_update <- copies_mat_update[!grepl("X", rownames(copies_mat_update)),]
 merged_OG_ids <- rownames(copies_mat_update)[grep(",", rownames(copies_mat_update))]
 merged_OG_df <- data.frame(OG_index=1:length(merged_OG_ids), OG_id=merged_OG_ids)
@@ -50,7 +50,7 @@ orthogroups <- orthogroups[,which(!colnames(orthogroups) %in% exclude_taxids_col
 
 ### Map old accessions to new accessions for Aca, Tbr, Lta.
 ## Read in mapping for updated IDs
-source(here("orthogroups/helpers", "idmapping.R"))
+source(here("orthogroups", "helpers", "idmapping.R"))
 
 ## Map ACABI->ACANB and keep best transcript isoforms.
 # Keep all ACABI transcript IDs that are identical in ACANB and are the best isoform
@@ -95,24 +95,19 @@ colnames(orthogroups) <- gsub("^X", "", colnames(orthogroups))
 
 
 ## Add in singleton genes
-source(here("orthogroups/helpers", "singleton_proteins.R"))
-# orthogroups <- add_proteins_to_orthogroups(orthogroups, tophit_singleton_separaterows)
+source(here("orthogroups", "helpers", "singleton_proteins.R"))
 orthogroups$singleton_protein_accessions <- ""
 tophit_singleton_summary <- tophit_singleton_summary[tophit_singleton_summary$OG_id %in% orthogroups$Orthogroup,]
 orthogroups$singleton_protein_accessions[match(tophit_singleton_summary$OG_id, orthogroups$Orthogroup)] <- tophit_singleton_summary$accessions
 
 ## Add in added species proteins
-source(here("orthogroups/helpers", "added_proteins.R"))
-# orthogroups <- add_proteins_to_orthogroups(orthogroups, tophit_add_species_separaterows)
+source(here("orthogroups", "helpers", "added_proteins.R"))
 orthogroups$added_species_protein_accessions <- ""
 tophit_add_species_summary <- tophit_add_species_summary[tophit_add_species_summary$OG_id %in% orthogroups$Orthogroup,]
 orthogroups$added_species_protein_accessions[match(tophit_add_species_summary$OG_id, orthogroups$Orthogroup)] <- tophit_add_species_summary$accessions
 
 ## Add in fusion genes
-source(here("orthogroups/helpers", "fusion_proteins.R"))
-# colnames(combined_fusion_protein_filter_disjoint_separaterows_newhit)[2] <- "OG_id"
-# combined_fusion_protein_filter_disjoint_separaterows_newhit <- combined_fusion_protein_filter_disjoint_separaterows_newhit[,c("protein_id", "OG_id")]
-# orthogroups <- add_proteins_to_orthogroups(orthogroups, combined_fusion_protein_filter_disjoint_separaterows_newhit)
+source(here("orthogroups", "helpers", "fusion_proteins.R"))
 orthogroups$fusion_protein_accessions <- ""
 fusion_protein_summary <- fusion_protein_summary[fusion_protein_summary$disjoint_hits %in% orthogroups$Orthogroup,]
 orthogroups$fusion_protein_accessions[match(fusion_protein_summary$disjoint_hits, orthogroups$Orthogroup)] <- fusion_protein_summary$accessions
@@ -125,7 +120,7 @@ orthogroups$collapse_accessions <- gsub(",", " >", orthogroups$collapse_accessio
 
 ## Assign OG IDs to singletons
 # Generate UOG ids for initial set of singleton proteins from raw OGs
-singleton_proteins_raw <- read.table(here("data/orthogroups/raw_orthogroups/Orthogroups", "raw_orthogroup_singleton_protein_accessions.txt"), sep="\t", header=FALSE)
+singleton_proteins_raw <- read.table(here("data", "orthogroups", "raw_orthogroups", "Orthogroups", "raw_orthogroup_singleton_protein_accessions.txt"), sep="\t", header=FALSE)
 colnames(singleton_proteins_raw) <- "accession"
 # Remove obsolete GiardiaDB44 proteins
 singleton_proteins_raw <- singleton_proteins_raw %>% filter(!grepl("^5741_GL50803_", accession))
@@ -159,20 +154,20 @@ singleton_proteins$accession[which(singleton_proteins$accession %in% lta_mapping
 singleton_proteins_unmerged <- singleton_proteins[!singleton_proteins$accession %in% tophit_singleton_separaterows$protein_id,]
 
 # Get list of added species proteins with no top hit
-protein_ids_81824 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "81824.fasta")))
-protein_ids_595528 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "595528.fasta")))
-protein_ids_667725 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "667725.fasta")))
-protein_ids_691883 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "691883.fasta")))
-protein_ids_946362 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "946362.fasta")))
-protein_ids_5741 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "5741.fasta")))
-protein_ids_1257118 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "ACANB_no.asterisk_new.proteins_rename.pep")))
-protein_ids_BaSk <- names(readAAStringSet(here("data/orthogroups/added_fastas", "BaSk_rename_combined.fasta")))
-protein_ids_CRuMs <- names(readAAStringSet(here("data/orthogroups/added_fastas", "CRuMs_rename_combined.fasta")))
-protein_ids_parasiticplants <- names(readAAStringSet(here("data/orthogroups/added_fastas", "Parasitic_plants_rename_combined.fasta")))
-protein_ids_ltaref <- names(readAAStringSet(here("data/orthogroups/added_fastas", "5689_no.asterisk_new.proteins.fasta")))
-protein_ids_mtDNA_new_proteins <- names(readAAStringSet(here("data/orthogroups/added_fastas", "mtDNA_protein_fasta_rename_combined.faa")))
-protein_ids_mtDNA_new_proteins_2025.04.07 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "mtDNA_protein_fasta_rename_added.2025.04.07_combined.faa")))
-protein_ids_mtDNA_new_proteins_2025.05.31 <- names(readAAStringSet(here("data/orthogroups/added_fastas", "mtDNA_protein_fasta_rename_added.2025.05.31_combined.faa")))
+protein_ids_81824 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "81824.fasta")))
+protein_ids_595528 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "595528.fasta")))
+protein_ids_667725 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "667725.fasta")))
+protein_ids_691883 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "691883.fasta")))
+protein_ids_946362 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "946362.fasta")))
+protein_ids_5741 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "5741.fasta")))
+protein_ids_1257118 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "ACANB_no.asterisk_new.proteins_rename.pep")))
+protein_ids_BaSk <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "BaSk_rename_combined.fasta")))
+protein_ids_CRuMs <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "CRuMs_rename_combined.fasta")))
+protein_ids_parasiticplants <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "Parasitic_plants_rename_combined.fasta")))
+protein_ids_ltaref <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "5689_no.asterisk_new.proteins.fasta")))
+protein_ids_mtDNA_new_proteins <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "mtDNA_protein_fasta_rename_combined.faa")))
+protein_ids_mtDNA_new_proteins_2025.04.07 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "mtDNA_protein_fasta_rename_added.2025.04.07_combined.faa")))
+protein_ids_mtDNA_new_proteins_2025.05.31 <- names(readAAStringSet(here("data", "orthogroups", "added_fastas", "mtDNA_protein_fasta_rename_added.2025.05.31_combined.faa")))
 
 # Remove incorrectly matched accessions from mtDNA and rename incorrect taxid
 protein_ids_mtDNA_new_proteins <- protein_ids_mtDNA_new_proteins[!grepl("^2086695_", protein_ids_mtDNA_new_proteins)]
@@ -210,7 +205,7 @@ ogs_long$BOOL_PRIMARY_OG[ogs_long_merge$rowindex] <- FALSE
 ogs_wide <- ogs_long %>% select(-BOOL_PRIMARY_OG) %>% pivot_wider(names_from = taxid, values_from = accession, values_fn = list(accession = ~paste(., collapse = ",")), values_fill = "")
 
 # Reorder by taxonomy
-uniprot_proteomes_673euks_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_673euks_tax <- read.table(here("data", "taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 uniprot_proteomes_673euks_tax <- uniprot_proteomes_673euks_tax[order(uniprot_proteomes_673euks_tax$Lineage),]
 ogs_wide <- cbind(ogs_wide$Orthogroup, ogs_wide[,match(uniprot_proteomes_673euks_tax$tree_id, colnames(ogs_wide))])
 
@@ -219,5 +214,5 @@ colnames(ogs_wide) <- uniprot_proteomes_673euks_tax$ScientificName[match(colname
 colnames(ogs_wide)[1] <- "Orthogroup_ID"
 
 ### Write out
-# write.table(ogs_long, here("data/orthogroups/refined_orthogroups", "refined_OGs_euk673spp_long.txt"), sep="\t", row.names=FALSE, col.names=TRUE, quote=FALSE)
-# write.table(ogs_wide, here("data/orthogroups/refined_orthogroups", "refined_OGs_euk673spp_wide.txt"), sep="\t", row.names=FALSE, col.names=TRUE, quote=FALSE)
+write.table(ogs_long, here("data", "orthogroups", "refined_orthogroups", "refined_OGs_euk673spp_long.txt"), sep="\t", row.names=FALSE, col.names=TRUE, quote=FALSE)
+write.table(ogs_wide, here("data", "orthogroups", "refined_orthogroups", "refined_OGs_euk673spp_wide.txt"), sep="\t", row.names=FALSE, col.names=TRUE, quote=FALSE)

@@ -8,15 +8,15 @@ library(castor)
 library(Biostrings)
 
 ### Read in mapping for updated IDs
-source(here("orthogroups/helpers", "idmapping.R"))
+source(here("orthogroups", "helpers", "idmapping.R"))
 
 ### Build initially merged orthogroups
 
 # Read in raw orthogroups
-orthogroups <- read.delim(here("data/orthogroups/raw_orthogroups/Orthogroups", "Orthogroups.tsv"), header=TRUE)
+orthogroups <- read.delim(here("data", "orthogroups", "raw_orthogroups", "Orthogroups", "Orthogroups.tsv"), header=TRUE)
 
 # Read in hmm-merged OGs
-orthogroups_merge <- read.table(here("data/orthogroups/first_merge", "first_merged_orthogroups.tsv"), sep="\t", header = TRUE)
+orthogroups_merge <- read.table(here("data", "orthogroups", "first_merge", "first_merged_orthogroups.tsv"), sep="\t", header = TRUE)
 # Assign new OG ids for merged OGs
 new_OG_ids <- sprintf("MOG%07d", 1:nrow(orthogroups_merge))
 orthogroups_merge$Orthogroup_original <- orthogroups_merge$Orthogroup
@@ -82,5 +82,5 @@ orthogroups$collapse_accessions <- gsub(", ", " >", orthogroups$collapse_accessi
 orthogroups$collapse_accessions <- gsub(",", " >", orthogroups$collapse_accessions)
 
 ## Write out
-# write.table(orthogroups[,c("Orthogroup", "Orthogroup_original")], here("data/orthogroups/first_merge", "initially_merged_OG_id_mapping.txt"), sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(orthogroups[,c("Orthogroup", "Orthogroup_original")], here("data", "orthogroups", "first_merge", "initially_merged_OG_id_mapping.txt"), sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
 

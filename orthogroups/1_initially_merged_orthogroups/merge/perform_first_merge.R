@@ -1,24 +1,25 @@
 ### Perform first merge based on hmm-hmm alignment and species overlap
 
 # Load libraries
+library(here)
 library(ape)
 library(tidyverse)
 library(castor)
 
-source(here("orthogroups/helpers", "species_overlap_utils.R"))
+source(here("orthogroups", "helpers", "species_overlap_utils.R"))
 
 suffix <- "first_merge"
-outdir <- here("data/orthogroups/first_merge")
+outdir <- here("data", "orthogroups", "first_merge")
 
 print("Reading in data")
 
 ## Preprocess OG copy counts
 # Read from RDS
-orthogroups_copies <- readRDS(here("data/orthogroups/raw_orthogroups/Orthogroups", "Orthogroups.GeneCount_ACABI.best.isoform.rds"))
+orthogroups_copies <- readRDS(here("data", "orthogroups", "raw_orthogroups", "Orthogroups", "Orthogroups.GeneCount_ACABI.best.isoform.rds"))
 
 ## Read in hhsearch data
 # Read in hhsearch + species overlap coef data, identify bidirectional hits and nonbidirectional hits
-hhsearch_OG <- read.table(here("data/orthogroups/first_merge", "combined_OG_all_vs_all_hhsuite_expect1e-3_tsv_overlap_coef.tsv"), sep="\t")
+hhsearch_OG <- read.table(here("data", "orthogroups", "first_merge", "combined_OG_all_vs_all_hhsuite_expect1e-3_tsv_overlap_coef.tsv"), sep="\t")
 colnames(hhsearch_OG) <- c("query_OG", "target_OG", "expect", "score", "overlap_coef")
 
 hhsearch_OG_filter <- hhsearch_OG %>% filter(query_OG != target_OG) %>% filter(expect < 1e-3)
@@ -78,7 +79,6 @@ for (i in 1:nrow(hhsearch_OG_filter_bidir)) {
     target_OG_name <- rownames(copies_mat_update)[target_OG_index]
     rownames(copies_mat_update)[target_OG_index] <- paste0(target_OG_name, ",", query_OG_name)
     
-    # copies_mat_update <- copies_mat_update[-query_OG_index,]
     rownames(copies_mat_update)[query_OG_index] <- paste0("X", query_OG_index)
     
     print(paste0("Bidir merge (", i, " of ", nrow(hhsearch_OG_filter_bidir), ")"))
@@ -121,5 +121,5 @@ if (nrow(hhsearch_OG_filter_nonbidir) > 0) {
 }
 
 ## Write out orthogroups after bidirectional and nonbidirectional merges
-# saveRDS(copies_mat_update, here("data/orthogroups/first_merge", "copies_mat_update_merge.bidir.nonbidir_first_merge.rds"))
+saveRDS(copies_mat_update, here("data", "orthogroups", "first_merge", "copies_mat_update_merge.bidir.nonbidir_first_merge.rds"))
 

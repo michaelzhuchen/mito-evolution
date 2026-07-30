@@ -1,17 +1,16 @@
 #!/bin/bash
 
+N_CORES="8"
 BASEDIR="first_merge"
 DBNAME="OG_raw_trimmed_hhsuite"
 
 OUTFOLDER="${BASEDIR}/${DBNAME}_db"
-N_CORES="8"
-
 mkdir -p $OUTFOLDER
 
-cd $OUTFOLDER
-
 # Make index for MSAs
-ffindex_build -s ${DBNAME}_msa.ff{data,index} $BASEDIR/$DBNAME
+ffindex_build -s $BASEDIR/${DBNAME}_msa.ff{data,index} $BASEDIR/$DBNAME
+
+cd $OUTFOLDER
 
 # Convert to a3m format
 OMP_NUM_THREADS=${N_CORES} mpirun -np ${N_CORES} ffindex_apply_mpi ${DBNAME}_msa.ff{data,index} \

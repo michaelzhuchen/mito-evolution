@@ -2,6 +2,8 @@
 library(tidyverse)
 theme_set(theme_classic())
 
+# Select OGs to resample
+OG_ids <- c("OG0005029", "OG0011422")
 
 # Read in OGs
 ogs_long <- read.table(here("data", "orthogroups", "refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
@@ -13,9 +15,6 @@ pfam_seprows <- read.table(here("data", "annotation", "pfam", "euk673spp_prokgro
 ## Read in taxonomic data
 uniprot_proteomes_tax <- read.table(here("data", "taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 euk_taxids <- uniprot_proteomes_tax$TaxId[which(uniprot_proteomes_tax$domain == "Eukaryota")]
-
-# Select OGs to resample
-OG_ids <- c("OG0005029", "OG0011422")
 
 # Identify domains to resample
 selected_pfam_domains_threshold <- 0.3
