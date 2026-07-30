@@ -13,11 +13,6 @@ This folder contains scripts used to perform protein phylogenetic inference.
    ```R
    install.packages(here)
    install.packages(tidyverse)
-   install.packages(ggrepel)
-   install.packages(gplots)
-   install.packages(basetheme)
-   install.packages(RColorBrewer)
-   install.packages(reshape2)
    install.packages(ape)
    install.packages(castor)
    install.packages(phytools)
