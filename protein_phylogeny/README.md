@@ -18,8 +18,8 @@ This folder contains scripts used to perform protein phylogenetic inference.
    install.packages(phytools)
    ```
 
-   Install muscle (v5), available here: https://www.drive5.com/muscle/
-   Install IQ-TREE (v2.3.6), available here: https://iqtree.github.io/.
+   Install muscle (v5), available here: https://www.drive5.com/muscle/. \
+   Install IQ-TREE (v2.3.6), available here: https://iqtree.github.io/. \
 
 2. **Run scripts**  
    Navigate to the base directory and run scripts. Note that these steps can be compute-intensive and may run slowly on large datasets.
