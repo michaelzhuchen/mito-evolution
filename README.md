@@ -29,7 +29,8 @@ mito-evolution/
 
 ### Prerequisites
 
-- Bash, Python (version ≥ 3.8), R (version ≥ 4.1)  
+- R (version 4.3.1)
+- Python (version 3.9.15)
 - Required packages and dependencies — see per-module documentation for details
 
 
@@ -41,25 +42,49 @@ mito-evolution/
    Note that hereafter ```mito-evolution``` is used as shorthand for the file path of this base directory.
 
 2. **Download data**  
-   Download the full dataset from the Zenodo archive and unpack each tar.xz archive to a directory with the same name within the `mito-evolution` directory, e.g.:
+   Download the full dataset from the Zenodo archive and unpack each tar.xz archive to a directory with the same name within the `mito-evolution` directory:
 
    ```bash
-   tar -xJf data.tar.xz -C mito-evolution/data
    tar -xJf alignments_and_initial_trees.tar.xz -C mito-evolution/alignments_and_initial_trees
+   tar -xJf data.tar.xz -C mito-evolution/data
+   tar -xJf pruned_rooted_trees.tar.xz -C mito-evolution/pruned_rooted_trees
+   tar -xJf reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.1.tar.xz -C mito-evolution/reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.1
+   tar -xJf reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.2.tar.xz -C mito-evolution/reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.2
+   tar -xJf reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.3.tar.xz -C mito-evolution/reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.3
+   tar -xJf reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.4.tar.xz -C mito-evolution/reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.4
+   tar -xJf reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.5.tar.xz -C mito-evolution/reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.5
+   tar -xJf reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.6.tar.xz -C mito-evolution/reconciled_consensus_trees_branch_length_optimization_with_supports_species.tree.6
+   tar -xJf reconciled_consensus_trees_for_timing_species.tree.1.tar.xz -C mito-evolution/reconciled_consensus_trees_for_timing_species.tree.1
+   tar -xJf reconciled_consensus_trees_for_timing_species.tree.2.tar.xz -C mito-evolution/reconciled_consensus_trees_for_timing_species.tree.2
+   tar -xJf reconciled_consensus_trees_for_timing_species.tree.3.tar.xz -C mito-evolution/reconciled_consensus_trees_for_timing_species.tree.3
+   tar -xJf reconciled_consensus_trees_for_timing_species.tree.4.tar.xz -C mito-evolution/reconciled_consensus_trees_for_timing_species.tree.4
+   tar -xJf reconciled_consensus_trees_for_timing_species.tree.5.tar.xz -C mito-evolution/reconciled_consensus_trees_for_timing_species.tree.5
+   tar -xJf reconciled_consensus_trees_for_timing_species.tree.6.tar.xz -C mito-evolution/reconciled_consensus_trees_for_timing_species.tree.6
+   tar -xJf reconciled_trees_posterior_clades_species.tree.1.tar.xz -C mito-evolution/reconciled_trees_posterior_clades_species.tree.1
+   tar -xJf reconciled_trees_posterior_clades_species.tree.2.tar.xz -C mito-evolution/reconciled_trees_posterior_clades_species.tree.2
+   tar -xJf reconciled_trees_posterior_clades_species.tree.3.tar.xz -C mito-evolution/reconciled_trees_posterior_clades_species.tree.3
+   tar -xJf reconciled_trees_posterior_clades_species.tree.4.tar.xz -C mito-evolution/reconciled_trees_posterior_clades_species.tree.4
+   tar -xJf reconciled_trees_posterior_clades_species.tree.5.tar.xz -C mito-evolution/reconciled_trees_posterior_clades_species.tree.5
+   tar -xJf reconciled_trees_posterior_clades_species.tree.6.tar.xz -C mito-evolution/reconciled_trees_posterior_clades_species.tree.6
    tar -xJf reconciled_trees_species.tree.1.tar.xz -C mito-evolution/reconciled_trees_species.tree.1
-   ...
+   tar -xJf reconciled_trees_species.tree.2.tar.xz -C mito-evolution/reconciled_trees_species.tree.2
+   tar -xJf reconciled_trees_species.tree.3.tar.xz -C mito-evolution/reconciled_trees_species.tree.3
+   tar -xJf reconciled_trees_species.tree.4.tar.xz -C mito-evolution/reconciled_trees_species.tree.4
+   tar -xJf reconciled_trees_species.tree.5.tar.xz -C mito-evolution/reconciled_trees_species.tree.5
+   tar -xJf reconciled_trees_species.tree.6.tar.xz -C mito-evolution/reconciled_trees_species.tree.6
+   tar -xJf species_fastas.tar.xz -C mito-evolution/species_fastas
    ```
 
 3. **Install dependencies**  
-   Install required packages and environments - see per-module documentation for details
+   Install required packages and environments - see per-module documentation for details.
 
 4. **Run scripts**  
-   Navigate to the module and run scripts from that working directory, or follow the per-module documentation where available.
+   Follow the per-module documentation where provided, or navigate to the module and run scripts from that working directory, e.g.:
    ```bash
    cd mito-evolution/ancestral_reconstruction
    Rscript reconstruction.R
    ```
 
-   Caution: some scripts generate output files that may overwrite existing files downloaded from Zenodo.
+   Caution: some scripts generate output files that may overwrite preexisting files downloaded from Zenodo.
 
 
