@@ -8,26 +8,26 @@ library(here)
 ### Select dataset
 dataset_name <- "species_tree_1"
 suffix <- "species_tree_1"
-species_tree <- read.tree(here("data/species_phylogeny/processed_species_tree", paste0(dataset_name, ".nwk")))
-homology_power_agg <- read.table(here("data/abSENSE_HMM", dataset_name, "absense_results.tsv"), sep="\t", header=TRUE)
-homology_power_per_species <- read.table(here("data/abSENSE_HMM", dataset_name, "absense_results_per_species.tsv"), sep="\t", header=FALSE)
+species_tree <- read.tree(here("data", "species_phylogeny", "processed_species_tree", paste0(dataset_name, ".nwk")))
+homology_power_agg <- read.table(here("data", "abSENSE_HMM", dataset_name, "absense_results.tsv"), sep="\t", header=TRUE)
+homology_power_per_species <- read.table(here("data", "abSENSE_HMM", dataset_name, "absense_results_per_species.tsv"), sep="\t", header=FALSE)
 
 ### Read in datasets
 # Read in experimental and mtDNA mito proteins
-gold_gene_accession_OG_id_df <- read.table(here("data/mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_subsampled.OGs_2026.04.20.tsv"), sep="\t", header=TRUE)
+gold_gene_accession_OG_id_df <- read.table(here("data", "mito_orthogroups", "mito_proteins_experimental.and.mtDNA_primary.OG_subsampled.OGs_2026.04.20.tsv"), sep="\t", header=TRUE)
 
 # Read in OG domain origins
-origin_table <- read.table(here("data/protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t")
+origin_table <- read.table(here("data", "protein_phylogeny", "orthogroup_origin_domain.tsv"), sep="\t")
 colnames(origin_table) <- c("OG_id", "n_euk_species_largest_euk_clade", "n_prok_species_largest_prok_clade", "LCA_node", "LCA_node_euks", "origin_domain", "dropped_tips")
 origin_table$OG_id <- gsub(".faa_clipkit.gappy.msa", "", origin_table$OG_id, fixed=TRUE)
 prok_origin_OG_ids <- origin_table$OG_id[origin_table$origin_domain == "Prokaryote"]
 
 # Read in OGs
-ogs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
+ogs_long <- read.table(here("data", "orthogroups", "refined_orthogroups", "refined_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
 colnames(ogs_long) <- c("accession", "Orthogroup", "taxid", "BOOL_PRIMARY_OG")
 
 # Update with split orthogroups
-split_OGs_long <- read.table(here("data/orthogroups/refined_orthogroups", "refined_subsampled_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
+split_OGs_long <- read.table(here("data", "orthogroups", "refined_orthogroups", "refined_subsampled_OGs_euk203spp_long.txt"), sep="\t", header=TRUE)
 ogs_long <- ogs_long %>% filter(!Orthogroup %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
 ogs_long <- rbind(ogs_long, split_OGs_long)
 
@@ -36,7 +36,7 @@ ogs_long_primary <- ogs_long %>% filter(BOOL_PRIMARY_OG)
 
 ## Load and process DeepLoc results
 # Read in DeepLoc results
-deeploc_results <- read.table(here("data/deeploc/predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
+deeploc_results <- read.table(here("data", "deeploc", "predictions", "DeepLoc2.0-mito_predictions.tsv"), header=TRUE)
 colnames(deeploc_results) <- c("Protein_ID", "Mitochondrion")
 deeploc_results$taxid <- gsub("_.*", "", deeploc_results$Protein_ID)
 
@@ -45,8 +45,8 @@ ogs_long_reduce <- ogs_long[,c("accession", "Orthogroup")]
 deeploc_results <- merge(deeploc_results, ogs_long_reduce, by.x="Protein_ID", by.y="accession") # Allow non-primary OGs (many-to-many)
 
 # Fix organelle-encoded proteins
-all_nonmito_accessions <- read.table(here("data/deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
-all_mtdna_accessions <- read.table(here("data/deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
+all_nonmito_accessions <- read.table(here("data", "deeploc", "all_nonmito_organelle_dna_protein_accessions_combined.txt"))$V1
+all_mtdna_accessions <- read.table(here("data", "deeploc", "all_mtdna_protein_accessions_combined.txt"))$V1
 deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% all_nonmito_accessions] <- 0
 deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% all_mtdna_accessions] <- 1
 
@@ -56,15 +56,15 @@ deeploc_results$Mitochondrion[deeploc_results$taxid %in% completed_mitoproteomes
 deeploc_results$Mitochondrion[deeploc_results$Protein_ID %in% gold_gene_accession_OG_id_df$gene_accession] <- 1
 
 # Ignore species missing organelle genomes in OGs that have organelle encoded proteins
-missing_nonmito_organelle_taxids <- read.table(here("data/deeploc", "missing_nonmito_organelle_taxids.txt"))$V1
-missing_mtdna_taxids <- read.table(here("data/deeploc", "missing_mtdna_taxids.txt"))$V1
+missing_nonmito_organelle_taxids <- read.table(here("data", "deeploc", "missing_nonmito_organelle_taxids.txt"))$V1
+missing_mtdna_taxids <- read.table(here("data", "deeploc", "missing_mtdna_taxids.txt"))$V1
 nonmito_organelle_OG_ids <- unique(deeploc_results$Orthogroup[deeploc_results$Protein_ID %in% all_nonmito_accessions])
 deeploc_results <- deeploc_results %>% filter(!(Orthogroup %in% nonmito_organelle_OG_ids & taxid %in% missing_nonmito_organelle_taxids))
 mito_organelle_OG_ids <- unique(deeploc_results$Orthogroup[deeploc_results$Protein_ID %in% all_mtdna_accessions])
 deeploc_results <- deeploc_results %>% filter(!(Orthogroup %in% mito_organelle_OG_ids & taxid %in% missing_mtdna_taxids))
 
 # Probability that an individual protein is mito
-deeploc_thresholds <- read.csv(here("data/deeploc", "deeploc_thresholds.csv"))
+deeploc_thresholds <- read.csv(here("data", "deeploc", "deeploc_thresholds.csv"))
 deeploc_mito_threshold <- deeploc_thresholds$threshold[deeploc_thresholds$label == "Mitochondrion"]
 mito_localization_prob_mk_threshold <- 0.5
 mito_localization_prob_parsimony_threshold <- 0.5
@@ -75,11 +75,11 @@ deeploc_results_exclude <- deeploc_results %>% filter(Mitochondrion >= deeploc_m
 deeploc_results_exclude_OG_ids <- unique(deeploc_results_exclude$Orthogroup)
 deeploc_results_exclude_OG_ids <- deeploc_results_exclude_OG_ids[!deeploc_results_exclude_OG_ids %in% gold_gene_accession_OG_id_df$OG_id]
 ## Write out OGs that have few species with predicted mito proteins
-# write.table(deeploc_results_exclude_OG_ids, here('data/reconstruction', 'deeploc_results_exclude_lt5mitospp_OG_ids.txt'), sep="\t", row.names = FALSE, col.names=FALSE, quote=FALSE)
+# write.table(deeploc_results_exclude_OG_ids, here('data", "reconstruction', 'deeploc_results_exclude_lt5mitospp_OG_ids.txt'), sep="\t", row.names = FALSE, col.names=FALSE, quote=FALSE)
 
 
 ## Read in taxonomic data
-uniprot_proteomes_tax <- read.table(here("data/taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
+uniprot_proteomes_tax <- read.table(here("data", "taxonomy", "uniprot_new.eukaryota_prokgroups_other.opisthokonta_parasitic.plants_BaSk_CRuMs_downsample_combined_ncbi_taxonomy.tsv"), sep="\t", header=TRUE)
 
 # Select focal species
 eukaryote_reference_species_list <- completed_mitoproteomes_species_list
@@ -93,7 +93,7 @@ tax_levels_df$node_index <- match(tax_levels_df$label, tree_labels)
 
 ## Read in Eukaryota parent PhROGs
 n_minimum_species_leca <- 4
-parent_progs_long_raw <- read.table(here("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
+parent_progs_long_raw <- read.table(here("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", "PhROGs_at_Node34_Eukaryota_parent_long.tsv"), sep="\t", header=TRUE)
 colnames(parent_progs_long_raw) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
 parent_progs_long <- parent_progs_long_raw %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
 parent_progs_long_primary <- parent_progs_long_raw %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(BOOL_primary_OG) %>% group_by(OG_id) %>% filter(!duplicated(protein_id)) %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
@@ -104,7 +104,7 @@ parent_progs_long_primary_mito <- parent_progs_long_primary %>% group_by(PROG_id
 parent_progs_long_primary_mito <- parent_progs_long_primary_mito %>% filter(!OG_id %in% deeploc_results_exclude_OG_ids)
 parent_mito_PhROG_ids <- unique(parent_progs_long_primary_mito$PROG_id)
 ## Write out parent mito PhROG ids
-# write.table(parent_mito_PhROG_ids, here("data/reconstruction", paste0("parent_mito_PhROG_ids_", suffix, ".txt")), row.names = FALSE, col.names = FALSE, quote = FALSE)
+# write.table(parent_mito_PhROG_ids, here("data", "reconstruction", paste0("parent_mito_PhROG_ids_", suffix, ".txt")), row.names = FALSE, col.names = FALSE, quote = FALSE)
 
 # Get Eukaryota_parent
 parent_progs_long_primary_mito_eukaryota <- parent_progs_long_primary_mito %>% filter(label == "Node34_Eukaryota")
@@ -121,7 +121,7 @@ for (i in 1:nrow(tax_levels_df)) {
   tax_levels_df_curr <- tax_levels_df[i,]
   print(tax_levels_df_curr$label)
   
-  progs_long <- read.table(file.path("data/phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", paste0("PhROGs_at_", tax_levels_df_curr$label, "_long.tsv")), sep="\t", header=TRUE)
+  progs_long <- read.table(file.path("data", "phylogenetically_resolved_orthogroups", dataset_name, "PhROGs_long", paste0("PhROGs_at_", tax_levels_df_curr$label, "_long.tsv")), sep="\t", header=TRUE)
   colnames(progs_long) <- c("OG_id", "PROG_id", "label", "mito_localization_prob_mk", "mito_localization_prob_parsimony", "protein_id",  "BOOL_NONVERTICAL", "BOOL_primary_OG")
   progs_long <- progs_long %>% mutate(OG_id = gsub("_Node.*", "", PROG_id), taxid = gsub("_.*", "", protein_id)) %>% filter(!OG_id %in% unique(gsub("_.*", "", split_OGs_long$Orthogroup)))
   
@@ -231,7 +231,7 @@ reclinomonas_taxid <- "48483"
 andalucia_taxid <- "505711"
 mantamonas_taxid <- "2983909"
 # Read in hmmsearch results from refined OGs to mtDNA proteins in mtDNA-rich eukaryotes
-mtdna_rich_euks_hmmsearch_tophit <- read.table(here("data/orthogroups/hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA_rich_euks_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"), header=FALSE)
+mtdna_rich_euks_hmmsearch_tophit <- read.table(here("data", "orthogroups", "hmmsearch_added_proteins", "OG_all_merged_hmm_vs_mtDNA_rich_euks_expect1e-3_DBSIZE.379668_combined.out_tophit.tsv"), header=FALSE)
 colnames(mtdna_rich_euks_hmmsearch_tophit) <- c("gene_accession", "OG_id")
 mtdna_rich_euks_hmmsearch_tophit$taxid <- gsub("_.*", "", mtdna_rich_euks_hmmsearch_tophit$gene_accession)
 gold_gene_accession_OG_id_other_species_mtdna_mantamonas_df <- gold_gene_accession_OG_id_df %>% filter(grepl("^2983909_", gene_accession))
