@@ -60,12 +60,22 @@ This folder contains scripts used to train and generate predictions using DeepLo
    deeploc2 -f test.fasta -o outputs -m Accurate
    ```
 
-   For attention analysis:
+   Process proteome-wide predictions with conservation filter:
+   ```bash
+   cd mito-evolution/deeploc
+   Rscript process_predictions.R
+   ```
+
+   Generate predictions using the retrained DeepLoc2.0 model, with attention outputs.
    ```bash
    cd deeploc2_package
    source .venv/bin/activate
    deeploc2 -f test.fasta -o outputs -m Accurate -p
-
+   ```
+   
+   Process attention outputs:
+   ```bash
+   cd mito-evolution/deeploc
    Rscript attention_analysis.R
    ```
 
