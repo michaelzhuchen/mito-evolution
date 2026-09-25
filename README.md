@@ -4,9 +4,9 @@
 
 This repository contains custom code and scripts used in the study "Comparative analysis of mitochondrial proteomes across the tree of life”, part of the MitoCarta Tree of Life (MitoTOL) project, for orthogroup inference, ancestral reconstructions, eukaryogenesis timing, and comparative analyses of mitochondrial proteomes across the tree of life.
 
-The associated datasets can be downloaded from Zenodo (```https://doi.org/10.5281/zenodo.17823713```). Please see the instructions below for download and extraction of these data.
+The associated datasets can be downloaded from Zenodo (https://doi.org/10.5281/zenodo.17823713). Please see the instructions below for download and extraction of these data.
 
-Mitochondrial proteome datasets (experimentally-defined and computationally-predicted mitoproteomes) from the MitoTOL project are available at mitocarta.org.
+Mitochondrial proteome datasets (experimentally-defined and computationally-predicted mitoproteomes) generated as part of the MitoTOL project are available at https://mitocarta.org/.
 
 ## Repository structure
 
@@ -46,7 +46,7 @@ mito-evolution/
    Note that hereafter ```mito-evolution``` is used as shorthand for the file path of this base directory.
 
 2. **Download data**  
-   Download the files from Zenodo (```https://doi.org/10.5281/zenodo.17823713```) and unpack each tar.xz archive to a directory with the same name within the `mito-evolution` directory:
+   Download the files from Zenodo (https://doi.org/10.5281/zenodo.17823713) and unpack each tar.xz archive to a directory with the same name within the `mito-evolution` directory:
 
    ```bash
    tar -xJf alignments_and_initial_trees.tar.xz -C mito-evolution/alignments_and_initial_trees
